@@ -1,0 +1,28 @@
+{
+  "name": "Multi-Tenant Platform",
+  "image": "ghcr.io/srl-labs/containerlab/devcontainer-dood-slim:latest",
+  "runArgs": [
+    "--network=host",
+    "--pid=host", 
+    "--privileged"
+  ],
+  "mounts": [
+    "type=bind,src=/var/run/docker.sock,dst=/var/run/docker.sock",
+    "type=bind,src=${localWorkspaceFolder},dst=${localWorkspaceFolder}"
+  ],
+  "workspaceFolder": "${localWorkspaceFolder}",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-vscode.vscode-json",
+        "redhat.vscode-yaml",
+        "ms-vscode.vscode-typescript-next"
+      ],
+      "settings": {
+        "terminal.integrated.shell.linux": "/bin/bash"
+      }
+    }
+  },
+  "remoteUser": "root",
+  "postCreateCommand": "containerlab version"
+}

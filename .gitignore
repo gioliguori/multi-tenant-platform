@@ -1,52 +1,76 @@
-# Prerequisites
-*.d
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
 
-# Object files
-*.o
-*.ko
-*.obj
-*.elf
+# ContainerLab
+clab-*
+.clab/
+*.bak
+topology-data.json
+ansible-inventory.yml
 
-# Linker output
-*.ilk
-*.map
-*.exp
+# Kubernetes
+*.kubeconfig
+kubeconfig
+.kube/
 
-# Precompiled Headers
-*.gch
-*.pch
+# Terraform
+*.tfstate
+*.tfstate.*
+.terraform/
+.terraform.lock.hcl
+terraform.tfvars
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
 
-# Libraries
-*.lib
-*.a
-*.la
-*.lo
+# Secrets
+secrets/
+*.key
+*.crt
+*.pem
+*.env
+.env.*
 
-# Shared objects (inc. Windows DLLs)
-*.dll
-*.so
-*.so.*
-*.dylib
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
 
-# Executables
-*.exe
-*.out
-*.app
-*.i*86
-*.x86_64
-*.hex
+# Logs
+*.log
+logs/
 
-# Debug files
-*.dSYM/
-*.su
-*.idb
-*.pdb
+# Backups
+backups/
+*.backup
 
-# Kernel Module Compile Results
-*.mod*
-*.cmd
-.tmp_versions/
-modules.order
-Module.symvers
-Mkfile.old
-dkms.conf
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.temp
+
+# Python (for scripts)
+__pycache__/
+*.py[cod]
+*$py.class
+.Python
+venv/
+env/
+
+# Node (for frontend apps)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Build outputs
+build/
+dist/
+out/
+target/

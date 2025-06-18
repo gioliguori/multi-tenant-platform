@@ -1,0 +1,104 @@
+name: topology
+topology:
+  defaults:
+    kind: linux
+  nodes:
+    leaf1:
+      image: frrouting/frr
+      group: leaf
+      labels:
+        graph-icon: leaf
+      mgmt-ipv4: 172.20.20.6
+      binds:
+        - configs/leaf1/daemons:/etc/frr/daemons
+        - configs/leaf1/frr.conf:/etc/frr/frr.conf
+      exec:
+        - ip addr add dev eth1 10.1.1.2/24 broadcast 10.1.1.255
+        - ip addr add dev eth2 10.1.2.2/24 broadcast 10.1.2.255
+        - ip addr add dev eth10 192.168.101.1/24 broadcast 192.168.101.255
+        - route del default gw 172.20.20.1
+        - route add default gw 10.1.1.1
+        - route add default gw 10.1.2.1
+    leaf2:
+      image: frrouting/frr
+      group: leaf
+      labels:
+        graph-icon: leaf
+      mgmt-ipv4: 172.20.20.7
+      binds:
+        - configs/leaf2/daemons:/etc/frr/daemons
+        - configs/leaf2/frr.conf:/etc/frr/frr.conf
+      exec:
+        - ip addr add dev eth1 10.2.1.2/24 broadcast 10.2.1.255
+        - ip addr add dev eth2 10.2.2.2/24 broadcast 10.2.2.255
+        - ip addr add dev eth10 192.168.102.1/24 broadcast 192.168.102.255
+        - route del default gw 172.20.20.1
+        - route add default gw 10.2.1.1
+        - route add default gw 10.2.2.1
+    spine1:
+      image: frrouting/frr
+      group: spine
+      labels:
+        graph-icon: spine
+      mgmt-ipv4: 172.20.20.11
+      binds:
+        - configs/spine1/daemons:/etc/frr/daemons
+        - configs/spine1/frr.conf:/etc/frr/frr.conf
+      exec:
+        - ip addr add dev eth1 10.1.1.1/24 broadcast 10.1.1.255
+        - ip addr add dev eth2 10.2.1.1/24 broadcast 10.2.1.255
+        - route del default gw 172.20.20.1
+    spine2:
+      image: frrouting/frr
+      group: spine
+      labels:
+        graph-icon: spine
+      mgmt-ipv4: 172.20.20.12
+      binds:
+        - configs/spine2/daemons:/etc/frr/daemons
+        - configs/spine2/frr.conf:/etc/frr/frr.conf
+      exec:
+        - ip addr add dev eth1 10.1.2.1/24 broadcast 10.1.2.255
+        - ip addr add dev eth2 10.2.2.1/24 broadcast 10.2.2.255
+        - route del default gw 172.20.20.1
+    h1:
+      image: wbitt/network-multitool:extra
+      group: server
+      labels:
+        graph-icon: server
+      mgmt-ipv4: 172.20.20.2
+      exec:
+        - ip addr add dev eth1 192.168.101.2/24 broadcast 192.168.101.255
+        - route del default gw 172.20.20.1
+        - route add default gw 192.168.101.1
+    h2:
+      image: wbitt/network-multitool:extra
+      group: server
+      labels:
+        graph-icon: server
+      mgmt-ipv4: 172.20.20.3
+      exec:
+        - ip addr add dev eth1 192.168.102.2/24 broadcast 192.168.102.255
+        - route del default gw 172.20.20.1
+        - route add default gw 192.168.102.1
+    graphite:
+      kind: linux
+      image: netreplica/graphite
+      env:
+        HOST_CONNECTION: ${SSH_CONNECTION}
+      binds:
+        - __clabDir__/topology-data.json:/htdocs/default/default.json:ro
+        - __clabDir__/ansible-inventory.yml:/htdocs/lab/default/ansible-inventory.yml:ro
+      ports:
+        - 8080:80
+      exec:
+        - sh -c 'graphite_motd.sh 8080'
+      labels:
+        graph-hide: yes
+  links: 
+    - endpoints: ["leaf1:eth1","spine1:eth1"]
+    - endpoints: ["leaf1:eth2","spine2:eth1"]
+    - endpoints: ["leaf2:eth1","spine1:eth2"]
+    - endpoints: ["leaf2:eth2","spine2:eth2"]
+    - endpoints: ["h1:eth1","leaf1:eth10"]
+    - endpoints: ["h2:eth1","leaf2:eth10"]
