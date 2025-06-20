@@ -1,0 +1,19 @@
+Name:         team-frontend
+Labels:       compliance=standard
+              cost-center=engineering
+              environment=development
+              kubernetes.io/metadata.name=team-frontend
+              pod-security.kubernetes.io/audit=restricted
+              pod-security.kubernetes.io/enforce=restricted
+              pod-security.kubernetes.io/warn=restricted
+              purpose=application
+              team=frontend
+Annotations:  contact: frontend-team@company.com
+              created-by: multi-tenant-setup
+              description: Frontend team namespace for React/Angular applications
+              setup-step: step-2
+Status:       Active
+
+No resource quota.
+
+No LimitRange resource.

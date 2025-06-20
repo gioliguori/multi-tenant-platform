@@ -1,0 +1,19 @@
+Name:         team-platform
+Labels:       compliance=elevated
+              cost-center=platform
+              environment=shared
+              kubernetes.io/metadata.name=team-platform
+              pod-security.kubernetes.io/audit=privileged
+              pod-security.kubernetes.io/enforce=privileged
+              pod-security.kubernetes.io/warn=privileged
+              purpose=infrastructure
+              team=platform
+Annotations:  contact: platform-team@company.com
+              created-by: multi-tenant-setup
+              description: Platform team namespace for GitOps, monitoring, and infrastructure
+              setup-step: step-2
+Status:       Active
+
+No resource quota.
+
+No LimitRange resource.

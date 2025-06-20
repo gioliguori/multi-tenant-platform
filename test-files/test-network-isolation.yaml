@@ -1,0 +1,168 @@
+# 🧪 Test Network Isolation - Pod di Test per Network Policies
+# Deploy questi pod per testare isolation network tra team
+
+# Pod di test in team-frontend namespace
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: network-test-frontend
+  namespace: team-frontend
+  labels:
+    app: network-test
+    team: frontend
+    test-type: network-isolation
+  annotations:
+    description: "Pod di test per verificare network isolation dal frontend"
+    test-purpose: "Verifica che non possa pingare backend namespace"
+spec:
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 1000
+    runAsGroup: 3000
+    fsGroup: 2000
+    seccompProfile:
+      type: RuntimeDefault
+  containers:
+  - name: netshoot
+    image: nicolaka/netshoot
+    command: ["sleep", "3600"]
+    resources:
+      requests:
+        cpu: 50m
+        memory: 64Mi
+      limits:
+        cpu: 100m
+        memory: 128Mi
+    securityContext:
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop:
+        - ALL
+      readOnlyRootFilesystem: false  # netshoot needs write access for tools
+    env:
+    - name: TEST_TYPE
+      value: "network-isolation"
+    - name: SOURCE_NAMESPACE
+      value: "team-frontend"
+
+---
+# Pod di test in team-backend namespace
+apiVersion: v1
+kind: Pod
+metadata:
+  name: network-test-backend
+  namespace: team-backend
+  labels:
+    app: network-test
+    team: backend
+    test-type: network-isolation
+  annotations:
+    description: "Pod di test per verificare network isolation dal backend"
+    test-purpose: "Target per test ping da frontend (dovrebbe fallire)"
+spec:
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 1000
+    runAsGroup: 3000
+    fsGroup: 2000
+    seccompProfile:
+      type: RuntimeDefault
+  containers:
+  - name: netshoot
+    image: nicolaka/netshoot
+    command: ["sleep", "3600"]
+    resources:
+      requests:
+        cpu: 50m
+        memory: 64Mi
+      limits:
+        cpu: 100m
+        memory: 128Mi
+    securityContext:
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop:
+        - ALL
+      readOnlyRootFilesystem: false
+    env:
+    - name: TEST_TYPE
+      value: "network-isolation"
+    - name: SOURCE_NAMESPACE
+      value: "team-backend"
+
+---
+# Pod con label monitoring per test platform access
+apiVersion: v1
+kind: Pod
+metadata:
+  name: monitoring-test-frontend
+  namespace: team-frontend
+  labels:
+    app: monitoring-test
+    team: frontend
+    monitoring: "enabled"  # Importante: consente accesso platform
+    test-type: platform-monitoring
+  annotations:
+    description: "Pod con monitoring=enabled per test platform access"
+    test-purpose: "Verifica che platform team possa accedere per monitoring"
+spec:
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 1000
+    seccompProfile:
+      type: RuntimeDefault
+  containers:
+  - name: nginx
+    image: nginx:alpine
+    ports:
+    - containerPort: 8080
+      name: metrics
+    resources:
+      requests:
+        cpu: 50m
+        memory: 64Mi
+      limits:
+        cpu: 100m
+        memory: 128Mi
+    securityContext:
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop:
+        - ALL
+      readOnlyRootFilesystem: true
+    volumeMounts:
+    - name: tmp
+      mountPath: /tmp
+    - name: var-cache
+      mountPath: /var/cache/nginx
+    - name: var-run
+      mountPath: /var/run
+  volumes:
+  - name: tmp
+    emptyDir: {}
+  - name: var-cache
+    emptyDir: {}
+  - name: var-run
+    emptyDir: {}
+
+---
+# Service per test monitoring access
+apiVersion: v1
+kind: Service
+metadata:
+  name: monitoring-test-service
+  namespace: team-frontend
+  labels:
+    app: monitoring-test
+    team: frontend
+spec:
+  type: ClusterIP
+  ports:
+  - port: 8080
+    targetPort: 8080
+    protocol: TCP
+    name: metrics
+  selector:
+    app: monitoring-test
+    monitoring: "enabled"

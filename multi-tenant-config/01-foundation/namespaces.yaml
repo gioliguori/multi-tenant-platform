@@ -1,0 +1,81 @@
+# Multi-Tenant Namespaces Configuration
+# Created: Step 2 of multi-tenant implementation
+# Purpose: Isolated namespaces for each team with security labels
+
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: team-frontend
+  labels:
+    # Team identification
+    team: frontend
+    purpose: application
+    environment: development
+    
+    # Pod Security Standards (Restricted for application teams)
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/audit: restricted
+    pod-security.kubernetes.io/warn: restricted
+    
+    # Additional labels for management
+    cost-center: engineering
+    compliance: standard
+    
+  annotations:
+    description: "Frontend team namespace for React/Angular applications"
+    contact: "frontend-team@company.com"
+    created-by: "multi-tenant-setup"
+    setup-step: "step-2"
+
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: team-backend
+  labels:
+    # Team identification
+    team: backend
+    purpose: application
+    environment: development
+    
+    # Pod Security Standards (Restricted for application teams)
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/audit: restricted
+    pod-security.kubernetes.io/warn: restricted
+    
+    # Additional labels for management
+    cost-center: engineering
+    compliance: standard
+    
+  annotations:
+    description: "Backend team namespace for APIs and microservices"
+    contact: "backend-team@company.com"
+    created-by: "multi-tenant-setup"
+    setup-step: "step-2"
+
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: team-platform
+  labels:
+    # Team identification
+    team: platform
+    purpose: infrastructure
+    environment: shared
+    
+    # Pod Security Standards (Privileged for platform operations)
+    pod-security.kubernetes.io/enforce: privileged
+    pod-security.kubernetes.io/audit: privileged
+    pod-security.kubernetes.io/warn: privileged
+    
+    # Additional labels for management
+    cost-center: platform
+    compliance: elevated
+    
+  annotations:
+    description: "Platform team namespace for GitOps, monitoring, and infrastructure"
+    contact: "platform-team@company.com"
+    created-by: "multi-tenant-setup"
+    setup-step: "step-2"

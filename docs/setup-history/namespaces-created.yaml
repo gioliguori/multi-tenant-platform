@@ -1,0 +1,87 @@
+    annotations:
+      contact: backend-team@company.com
+      created-by: multi-tenant-setup
+      description: Backend team namespace for APIs and microservices
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","kind":"Namespace","metadata":{"annotations":{"contact":"backend-team@company.com","created-by":"multi-tenant-setup","description":"Backend team namespace for APIs and microservices","setup-step":"step-2"},"labels":{"compliance":"standard","cost-center":"engineering","environment":"development","pod-security.kubernetes.io/audit":"restricted","pod-security.kubernetes.io/enforce":"restricted","pod-security.kubernetes.io/warn":"restricted","purpose":"application","team":"backend"},"name":"team-backend"}}
+      setup-step: step-2
+    creationTimestamp: "2025-06-19T10:21:49Z"
+    labels:
+      compliance: standard
+      cost-center: engineering
+      environment: development
+      kubernetes.io/metadata.name: team-backend
+      pod-security.kubernetes.io/audit: restricted
+      pod-security.kubernetes.io/enforce: restricted
+      pod-security.kubernetes.io/warn: restricted
+      purpose: application
+      team: backend
+    name: team-backend
+    resourceVersion: "1669"
+    uid: bbdc4a1c-5c70-4d3d-a9ca-3de1e6073d11
+  spec:
+    finalizers:
+    - kubernetes
+  status:
+    phase: Active
+- apiVersion: v1
+  kind: Namespace
+  metadata:
+    annotations:
+      contact: frontend-team@company.com
+      created-by: multi-tenant-setup
+      description: Frontend team namespace for React/Angular applications
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","kind":"Namespace","metadata":{"annotations":{"contact":"frontend-team@company.com","created-by":"multi-tenant-setup","description":"Frontend team namespace for React/Angular applications","setup-step":"step-2"},"labels":{"compliance":"standard","cost-center":"engineering","environment":"development","pod-security.kubernetes.io/audit":"restricted","pod-security.kubernetes.io/enforce":"restricted","pod-security.kubernetes.io/warn":"restricted","purpose":"application","team":"frontend"},"name":"team-frontend"}}
+      setup-step: step-2
+    creationTimestamp: "2025-06-19T10:21:49Z"
+    labels:
+      compliance: standard
+      cost-center: engineering
+      environment: development
+      kubernetes.io/metadata.name: team-frontend
+      pod-security.kubernetes.io/audit: restricted
+      pod-security.kubernetes.io/enforce: restricted
+      pod-security.kubernetes.io/warn: restricted
+      purpose: application
+      team: frontend
+    name: team-frontend
+    resourceVersion: "1666"
+    uid: 28a72747-b718-4c72-a27a-affce08d1ee0
+  spec:
+    finalizers:
+    - kubernetes
+  status:
+    phase: Active
+- apiVersion: v1
+  kind: Namespace
+  metadata:
+    annotations:
+      contact: platform-team@company.com
+      created-by: multi-tenant-setup
+      description: Platform team namespace for GitOps, monitoring, and infrastructure
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","kind":"Namespace","metadata":{"annotations":{"contact":"platform-team@company.com","created-by":"multi-tenant-setup","description":"Platform team namespace for GitOps, monitoring, and infrastructure","setup-step":"step-2"},"labels":{"compliance":"elevated","cost-center":"platform","environment":"shared","pod-security.kubernetes.io/audit":"privileged","pod-security.kubernetes.io/enforce":"privileged","pod-security.kubernetes.io/warn":"privileged","purpose":"infrastructure","team":"platform"},"name":"team-platform"}}
+      setup-step: step-2
+    creationTimestamp: "2025-06-19T10:21:49Z"
+    labels:
+      compliance: elevated
+      cost-center: platform
+      environment: shared
+      kubernetes.io/metadata.name: team-platform
+      pod-security.kubernetes.io/audit: privileged
+      pod-security.kubernetes.io/enforce: privileged
+      pod-security.kubernetes.io/warn: privileged
+      purpose: infrastructure
+      team: platform
+    name: team-platform
+    resourceVersion: "1672"
+    uid: ab1a0818-3082-4f26-ae2b-065503031c01
+  spec:
+    finalizers:
+    - kubernetes
+  status:
+    phase: Active
+kind: List
+metadata:
+  resourceVersion: ""

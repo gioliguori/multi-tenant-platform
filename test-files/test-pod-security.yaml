@@ -1,0 +1,141 @@
+# 🧪 Test Pod Security Standards
+# Verifica che i Pod Security Standards blocchino container insicuri
+
+# Test 1: Pod INSICURO (dovrebbe essere BLOCCATO)
+apiVersion: v1
+kind: Pod
+metadata:
+  name: test-insecure-pod
+  namespace: team-frontend
+  labels:
+    test: pod-security-violation
+  annotations:
+    description: "Pod insicuro per testare Pod Security Standards"
+spec:
+  containers:
+  - name: nginx
+    image: nginx:alpine
+    # PROBLEMA: Nessun securityContext definito
+    # Questo violerà i Pod Security Standards "restricted":
+    # - runAsNonRoot non impostato
+    # - allowPrivilegeEscalation non disabilitato
+    # - capabilities non droppate
+    # - seccompProfile non impostato
+
+---
+# Test 2: Pod SICURO (dovrebbe essere PERMESSO)
+apiVersion: v1
+kind: Pod
+metadata:
+  name: test-secure-pod
+  namespace: team-frontend
+  labels:
+    test: pod-security-compliant
+  annotations:
+    description: "Pod sicuro che rispetta Pod Security Standards"
+spec:
+  # Pod-level security context
+  securityContext:
+    runAsNonRoot: true      # Richiesto da Pod Security Standards
+    runAsUser: 1000         # User ID non-root
+    runAsGroup: 3000        # Group ID
+    fsGroup: 2000           # File system group
+    seccompProfile:         # Richiesto da Pod Security Standards
+      type: RuntimeDefault
+  containers:
+  - name: nginx
+    image: nginx:alpine
+    resources:
+      requests:
+        cpu: 50m
+        memory: 64Mi
+      limits:
+        cpu: 100m
+        memory: 128Mi
+    # Container-level security context
+    securityContext:
+      allowPrivilegeEscalation: false  # Richiesto da Pod Security Standards
+      capabilities:                    # Richiesto da Pod Security Standards
+        drop:
+        - ALL
+      readOnlyRootFilesystem: true     # Best practice
+    ports:
+    - containerPort: 8080
+      name: http
+    # Volume mounts per read-only filesystem
+    volumeMounts:
+    - name: tmp
+      mountPath: /tmp
+    - name: var-cache
+      mountPath: /var/cache/nginx
+    - name: var-run
+      mountPath: /var/run
+  volumes:
+  - name: tmp
+    emptyDir: {}
+  - name: var-cache
+    emptyDir: {}
+  - name: var-run
+    emptyDir: {}
+
+---
+# Test 3: Pod con PRIVILEGI ECCESSIVI (dovrebbe essere BLOCCATO)
+apiVersion: v1
+kind: Pod
+metadata:
+  name: test-privileged-pod
+  namespace: team-frontend
+  labels:
+    test: pod-security-privileged-violation
+  annotations:
+    description: "Pod con privilegi eccessivi per testare blocco"
+spec:
+  securityContext:
+    runAsNonRoot: false     # VIOLAZIONE: cerca di eseguire come root
+  containers:
+  - name: nginx
+    image: nginx:alpine
+    securityContext:
+      privileged: true      # VIOLAZIONE: container privilegiato
+      allowPrivilegeEscalation: true  # VIOLAZIONE: escalation permessa
+      capabilities:
+        add:
+        - NET_ADMIN         # VIOLAZIONE: aggiunge capabilities
+        - SYS_ADMIN
+
+---
+# Test 4: Pod per test LimitRange (senza resource specs)
+apiVersion: v1
+kind: Pod
+metadata:
+  name: test-limitrange-defaults
+  namespace: team-frontend
+  labels:
+    test: limitrange-defaults
+  annotations:
+    description: "Pod senza resource specs per testare LimitRange defaults"
+spec:
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 1000
+    seccompProfile:
+      type: RuntimeDefault
+  containers:
+  - name: nginx
+    image: nginx:alpine
+    # NOTA: Nessun resources: specificato
+    # LimitRange dovrebbe applicare automaticamente:
+    # - default CPU: 200m, Memory: 256Mi
+    # - defaultRequest CPU: 100m, Memory: 128Mi
+    securityContext:
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop:
+        - ALL
+      readOnlyRootFilesystem: true
+    volumeMounts:
+    - name: tmp
+      mountPath: /tmp
+  volumes:
+  - name: tmp
+    emptyDir: {}

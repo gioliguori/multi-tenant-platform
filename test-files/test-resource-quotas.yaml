@@ -1,0 +1,166 @@
+# 🧪 Test Resource Quotas e LimitRanges
+# Verifica che le quote e i limiti delle risorse funzionino correttamente
+
+# Test 1: Deployment ENTRO I LIMITI (dovrebbe funzionare)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: quota-test-within-limits
+  namespace: team-frontend
+  labels:
+    test: resource-quota-within-limits
+  annotations:
+    description: "Deployment piccolo che rispetta le quote del team"
+spec:
+  replicas: 5  # Entro il limite di 50 pods
+  selector:
+    matchLabels:
+      app: quota-test-small
+  template:
+    metadata:
+      labels:
+        app: quota-test-small
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 3000
+        fsGroup: 2000
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+      - name: nginx
+        image: nginx:alpine
+        resources:
+          requests:
+            cpu: 50m        # Totale: 5 pods × 50m = 250m CPU (entro 4 CPU)
+            memory: 64Mi    # Totale: 5 pods × 64Mi = 320Mi (entro 8Gi)
+          limits:
+            cpu: 100m       # Totale: 5 pods × 100m = 500m CPU (entro 8 CPU)
+            memory: 128Mi   # Totale: 5 pods × 128Mi = 640Mi (entro 16Gi)
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          readOnlyRootFilesystem: true
+        volumeMounts:
+        - name: tmp
+          mountPath: /tmp
+        - name: var-cache
+          mountPath: /var/cache/nginx
+        - name: var-run
+          mountPath: /var/run
+      volumes:
+      - name: tmp
+        emptyDir: {}
+      - name: var-cache
+        emptyDir: {}
+      - name: var-run
+        emptyDir: {}
+
+---
+# Test 2: Pod che ECCEDE QUOTA CPU (dovrebbe essere bloccato)
+apiVersion: v1
+kind: Pod
+metadata:
+  name: quota-test-cpu-excessive
+  namespace: team-frontend
+  labels:
+    test: resource-quota-cpu-violation
+  annotations:
+    description: "Pod che richiede più CPU della quota disponibile"
+spec:
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 1000
+    seccompProfile:
+      type: RuntimeDefault
+  containers:
+  - name: nginx
+    image: nginx:alpine
+    resources:
+      requests:
+        cpu: "5"        # VIOLAZIONE: Eccede quota team (4 CPU totali)
+        memory: 1Gi
+      limits:
+        cpu: "5"
+        memory: 1Gi
+    securityContext:
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop:
+        - ALL
+    volumeMounts:
+    - name: tmp
+      mountPath: /tmp
+  volumes:
+  - name: tmp
+    emptyDir: {}
+
+---
+# Test 3: Pod che ECCEDE LIMITRANGE (dovrebbe essere bloccato)
+apiVersion: v1
+kind: Pod
+metadata:
+  name: limitrange-test-excessive
+  namespace: team-frontend
+  labels:
+    test: limitrange-violation
+  annotations:
+    description: "Pod che eccede i limiti massimi per container del LimitRange"
+spec:
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 1000
+    seccompProfile:
+      type: RuntimeDefault
+  containers:
+  - name: nginx
+    image: nginx:alpine
+    resources:
+      requests:
+        cpu: "3"        # VIOLAZIONE: Eccede max 2 CPU per container (LimitRange)
+        memory: 6Gi     # VIOLAZIONE: Eccede max 4Gi per container (LimitRange)
+      limits:
+        cpu: "3"
+        memory: 6Gi
+    securityContext:
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop:
+        - ALL
+    volumeMounts:
+    - name: tmp
+      mountPath: /tmp
+  volumes:
+  - name: tmp
+    emptyDir: {}
+
+---
+# Test 4: Service per testare quota oggetti
+apiVersion: v1
+kind: Service
+metadata:
+  name: quota-test-service
+  namespace: team-frontend
+  labels:
+    test: resource-quota-objects
+  annotations:
+    description: "Service per testare quota su numero di oggetti"
+spec:
+  type: ClusterIP
+  ports:
+  - port: 80
+    targetPort: 8080
+    protocol: TCP
+    name: http
+  selector:
+    app: quota-test-small
+
+---
+# Test 5: ConfigMap per testare quota oggetti
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: quota-test-config

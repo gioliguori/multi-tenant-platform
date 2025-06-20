@@ -1,0 +1,283 @@
+# Multi-Tenant RBAC Configuration
+# Created: Step 4 of multi-tenant implementation
+# Purpose: Role-based access control for team isolation
+
+# =============================================================================
+# FRONTEND TEAM RBAC (Namespace-scoped permissions)
+# =============================================================================
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  namespace: team-frontend
+  name: team-frontend-role
+  labels:
+    team: frontend
+    component: rbac
+    setup-step: "step-4"
+  annotations:
+    description: "Full permissions for frontend team within their namespace"
+    created-by: "multi-tenant-setup"
+rules:
+# Core Kubernetes resources
+- apiGroups: [""]
+  resources: ["pods", "services", "configmaps", "secrets", "persistentvolumeclaims", "endpoints"]
+  verbs: ["get", "list", "create", "update", "patch", "delete"]
+
+# Application deployments
+- apiGroups: ["apps"]
+  resources: ["deployments", "replicasets", "statefulsets", "daemonsets"]
+  verbs: ["get", "list", "create", "update", "patch", "delete"]
+
+# Networking (frontend needs ingress)
+- apiGroups: ["networking.k8s.io"]
+  resources: ["ingresses", "networkpolicies"]
+  verbs: ["get", "list", "create", "update", "patch", "delete"]
+
+# Autoscaling
+- apiGroups: ["autoscaling"]
+  resources: ["horizontalpodautoscalers"]
+  verbs: ["get", "list", "create", "update", "patch", "delete"]
+
+# Read-only access to events and logs (troubleshooting)
+- apiGroups: [""]
+  resources: ["events"]
+  verbs: ["get", "list"]
+
+- apiGroups: [""]
+  resources: ["pods/log", "pods/exec"]
+  verbs: ["get", "list"]
+
+# Metrics access for monitoring
+- apiGroups: ["metrics.k8s.io"]
+  resources: ["pods", "nodes"]
+  verbs: ["get", "list"]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: team-frontend-binding
+  namespace: team-frontend
+  labels:
+    team: frontend
+    component: rbac
+    setup-step: "step-4"
+  annotations:
+    description: "Binds frontend ServiceAccount to frontend Role"
+    created-by: "multi-tenant-setup"
+subjects:
+- kind: ServiceAccount
+  name: team-frontend-sa
+  namespace: team-frontend
+roleRef:
+  kind: Role
+  name: team-frontend-role
+  apiGroup: rbac.authorization.k8s.io
+
+# =============================================================================
+# BACKEND TEAM RBAC (Namespace-scoped permissions)
+# =============================================================================
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  namespace: team-backend
+  name: team-backend-role
+  labels:
+    team: backend
+    component: rbac
+    setup-step: "step-4"
+  annotations:
+    description: "Full permissions for backend team within their namespace"
+    created-by: "multi-tenant-setup"
+rules:
+# Core Kubernetes resources (same as frontend)
+- apiGroups: [""]
+  resources: ["pods", "services", "configmaps", "secrets", "persistentvolumeclaims", "endpoints"]
+  verbs: ["get", "list", "create", "update", "patch", "delete"]
+
+# Application deployments
+- apiGroups: ["apps"]
+  resources: ["deployments", "replicasets", "statefulsets", "daemonsets"]
+  verbs: ["get", "list", "create", "update", "patch", "delete"]
+
+# Backend-specific: Jobs and CronJobs for data processing
+- apiGroups: ["batch"]
+  resources: ["jobs", "cronjobs"]
+  verbs: ["get", "list", "create", "update", "patch", "delete"]
+
+# Network policies (backend doesn't need ingress, only internal networking)
+- apiGroups: ["networking.k8s.io"]
+  resources: ["networkpolicies"]
+  verbs: ["get", "list", "create", "update", "patch", "delete"]
+
+# Autoscaling
+- apiGroups: ["autoscaling"]
+  resources: ["horizontalpodautoscalers"]
+  verbs: ["get", "list", "create", "update", "patch", "delete"]
+
+# Read-only access to events and logs
+- apiGroups: [""]
+  resources: ["events"]
+  verbs: ["get", "list"]
+
+- apiGroups: [""]
+  resources: ["pods/log", "pods/exec"]
+  verbs: ["get", "list"]
+
+# Metrics access
+- apiGroups: ["metrics.k8s.io"]
+  resources: ["pods", "nodes"]
+  verbs: ["get", "list"]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: team-backend-binding
+  namespace: team-backend
+  labels:
+    team: backend
+    component: rbac
+    setup-step: "step-4"
+  annotations:
+    description: "Binds backend ServiceAccount to backend Role"
+    created-by: "multi-tenant-setup"
+subjects:
+- kind: ServiceAccount
+  name: team-backend-sa
+  namespace: team-backend
+roleRef:
+  kind: Role
+  name: team-backend-role
+  apiGroup: rbac.authorization.k8s.io
+
+# =============================================================================
+# PLATFORM TEAM RBAC (Cluster-wide admin permissions)
+# =============================================================================
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: team-platform-cluster-role
+  labels:
+    team: platform
+    component: rbac
+    setup-step: "step-4"
+  annotations:
+    description: "Cluster-wide admin permissions for platform team"
+    created-by: "multi-tenant-setup"
+    privilege-level: "cluster-admin"
+rules:
+# Full cluster access for platform operations (GitOps, monitoring, etc.)
+- apiGroups: ["*"]
+  resources: ["*"]
+  verbs: ["*"]
+
+# Access to non-resource URLs (health checks, metrics endpoints)
+- nonResourceURLs: ["*"]
+  verbs: ["*"]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: team-platform-cluster-binding
+  labels:
+    team: platform
+    component: rbac
+    setup-step: "step-4"
+  annotations:
+    description: "Binds platform ServiceAccount to cluster admin role"
+    created-by: "multi-tenant-setup"
+subjects:
+- kind: ServiceAccount
+  name: team-platform-sa
+  namespace: team-platform
+roleRef:
+  kind: ClusterRole
+  name: team-platform-cluster-role
+  apiGroup: rbac.authorization.k8s.io
+
+# =============================================================================
+# ADDITIONAL RBAC: Cross-namespace monitoring access
+# =============================================================================
+
+# Allow platform team to access other namespaces for monitoring
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  namespace: team-frontend
+  name: platform-monitoring-role
+  labels:
+    team: platform
+    component: monitoring-rbac
+    setup-step: "step-4"
+rules:
+- apiGroups: [""]
+  resources: ["pods", "services", "endpoints"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["apps"]
+  resources: ["deployments", "replicasets"]
+  verbs: ["get", "list", "watch"]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: platform-monitoring-binding
+  namespace: team-frontend
+  labels:
+    team: platform
+    component: monitoring-rbac
+    setup-step: "step-4"
+subjects:
+- kind: ServiceAccount
+  name: team-platform-sa
+  namespace: team-platform
+roleRef:
+  kind: Role
+  name: platform-monitoring-role
+  apiGroup: rbac.authorization.k8s.io
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  namespace: team-backend
+  name: platform-monitoring-role
+  labels:
+    team: platform
+    component: monitoring-rbac
+    setup-step: "step-4"
+rules:
+- apiGroups: [""]
+  resources: ["pods", "services", "endpoints"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["apps"]
+  resources: ["deployments", "replicasets"]
+  verbs: ["get", "list", "watch"]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: platform-monitoring-binding
+  namespace: team-backend
+  labels:
+    team: platform
+    component: monitoring-rbac
+    setup-step: "step-4"
+subjects:
+- kind: ServiceAccount
+  name: team-platform-sa
+  namespace: team-platform
+roleRef:
+  kind: Role
+  name: platform-monitoring-role
+  apiGroup: rbac.authorization.k8s.io

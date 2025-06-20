@@ -1,0 +1,210 @@
+# Multi-Tenant Resource Quotas Configuration
+# Created: Step 5 of multi-tenant implementation
+# Purpose: Resource governance and cost control per team
+
+# =============================================================================
+# FRONTEND TEAM RESOURCE QUOTA
+# =============================================================================
+
+---
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: team-frontend-quota
+  namespace: team-frontend
+  labels:
+    team: frontend
+    component: governance
+    setup-step: "step-5"
+  annotations:
+    description: "Resource limits and cost control for frontend team"
+    monthly-budget: "$500"
+    contact: "frontend-team@company.com"
+    created-by: "multi-tenant-setup"
+spec:
+  hard:
+    # Compute Resources
+    requests.cpu: "4"           # 4 CPU cores requested
+    requests.memory: 8Gi        # 8GB RAM requested
+    limits.cpu: "8"             # Max 8 CPU cores burst
+    limits.memory: 16Gi         # Max 16GB RAM burst
+    
+    # Kubernetes Objects
+    pods: "50"                  # Max 50 pods
+    services: "10"              # Max 10 services
+    secrets: "20"               # Max 20 secrets
+    configmaps: "20"            # Max 20 configmaps
+    
+    # Storage
+    requests.storage: 100Gi     # Max 100GB storage
+    persistentvolumeclaims: "10" # Max 10 PVCs
+    
+    # Networking (frontend needs external access)
+    services.nodeports: "2"     # Max 2 NodePort services
+    services.loadbalancers: "1" # Max 1 LoadBalancer
+
+---
+# LimitRange for default pod limits (frontend team)
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: team-frontend-limits
+  namespace: team-frontend
+  labels:
+    team: frontend
+    component: governance
+    setup-step: "step-5"
+  annotations:
+    description: "Default resource limits for frontend team pods"
+    created-by: "multi-tenant-setup"
+spec:
+  limits:
+  # Combined default and max limits for containers
+  - default:
+      cpu: 200m              # Default 0.2 CPU
+      memory: 256Mi          # Default 256MB RAM
+    defaultRequest:
+      cpu: 100m              # Default request 0.1 CPU
+      memory: 128Mi          # Default request 128MB RAM
+    max:
+      cpu: "2"               # Max 2 CPU per container
+      memory: 4Gi            # Max 4GB per container
+    type: Container
+
+# =============================================================================
+# BACKEND TEAM RESOURCE QUOTA
+# =============================================================================
+
+---
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: team-backend-quota
+  namespace: team-backend
+  labels:
+    team: backend
+    component: governance
+    setup-step: "step-5"
+  annotations:
+    description: "Resource limits and cost control for backend team"
+    monthly-budget: "$800"
+    contact: "backend-team@company.com"
+    created-by: "multi-tenant-setup"
+spec:
+  hard:
+    # Backend needs more resources for databases and APIs
+    requests.cpu: "6"           # 6 CPU cores requested
+    requests.memory: 12Gi       # 12GB RAM requested  
+    limits.cpu: "12"            # Max 12 CPU cores
+    limits.memory: 24Gi         # Max 24GB RAM
+    
+    # More objects for microservices architecture
+    pods: "75"                  # Max 75 pods
+    services: "15"              # Max 15 services
+    secrets: "30"               # Max 30 secrets (DB credentials, etc.)
+    configmaps: "30"            # Max 30 configmaps
+    
+    # More storage for databases
+    requests.storage: 200Gi     # Max 200GB storage
+    persistentvolumeclaims: "15" # Max 15 PVCs
+    
+    # Networking (backend is internal, limited external access)
+    services.nodeports: "1"     # Max 1 NodePort (for debugging)
+    services.loadbalancers: "0" # No LoadBalancers (internal only)
+
+---
+# LimitRange for default pod limits (backend team)
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: team-backend-limits
+  namespace: team-backend
+  labels:
+    team: backend
+    component: governance
+    setup-step: "step-5"
+  annotations:
+    description: "Default resource limits for backend team pods"
+    created-by: "multi-tenant-setup"
+spec:
+  limits:
+  # Combined default and max limits for containers (more generous for APIs/DBs)
+  - default:
+      cpu: 500m              # Default 0.5 CPU
+      memory: 512Mi          # Default 512MB RAM
+    defaultRequest:
+      cpu: 200m              # Default request 0.2 CPU
+      memory: 256Mi          # Default request 256MB RAM
+    max:
+      cpu: "4"               # Max 4 CPU per container (for databases)
+      memory: 8Gi            # Max 8GB per container
+    type: Container
+
+# =============================================================================
+# PLATFORM TEAM RESOURCE QUOTA
+# =============================================================================
+
+---
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: team-platform-quota
+  namespace: team-platform
+  labels:
+    team: platform
+    component: governance
+    setup-step: "step-5"
+  annotations:
+    description: "Resource limits for platform team infrastructure"
+    monthly-budget: "$1200"
+    contact: "platform-team@company.com"
+    created-by: "multi-tenant-setup"
+spec:
+  hard:
+    # Platform needs most resources for monitoring, GitOps, etc.
+    requests.cpu: "8"           # 8 CPU cores requested
+    requests.memory: 16Gi       # 16GB RAM requested
+    limits.cpu: "16"            # Max 16 CPU cores
+    limits.memory: 32Gi         # Max 32GB RAM
+    
+    # Lots of objects for infrastructure components
+    pods: "100"                 # Max 100 pods
+    services: "25"              # Max 25 services
+    secrets: "50"               # Max 50 secrets
+    configmaps: "50"            # Max 50 configmaps
+    
+    # Storage for monitoring data, logs, etc.
+    requests.storage: 500Gi     # Max 500GB storage
+    persistentvolumeclaims: "25" # Max 25 PVCs
+    
+    # Full networking access for platform services
+    services.nodeports: "10"    # Max 10 NodePort services
+    services.loadbalancers: "5" # Max 5 LoadBalancers
+
+---
+# LimitRange for platform team (more generous defaults)
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: team-platform-limits
+  namespace: team-platform
+  labels:
+    team: platform
+    component: governance
+    setup-step: "step-5"
+  annotations:
+    description: "Default resource limits for platform team infrastructure"
+    created-by: "multi-tenant-setup"
+spec:
+  limits:
+  # Combined default and max limits for infrastructure containers
+  - default:
+      cpu: "1"               # Default 1 CPU (infrastructure needs more)
+      memory: 1Gi            # Default 1GB RAM
+    defaultRequest:
+      cpu: 500m              # Default request 0.5 CPU
+      memory: 512Mi          # Default request 512MB RAM
+    max:
+      cpu: "8"               # Max 8 CPU per container (for monitoring/GitOps)
+      memory: 16Gi           # Max 16GB per container
+    type: Container
