@@ -1,288 +1,220 @@
 import React, { useState, useEffect } from 'react';
 
-const App = () => {
-  const [products, setProducts] = useState([]);
+function App() {
+  const [internalProducts, setInternalProducts] = useState([]);
+  const [externalProducts, setExternalProducts] = useState([]);
   const [serverInfo, setServerInfo] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  // Load products on component mount
   useEffect(() => {
-    loadProducts();
+    loadInternalProducts();
+    loadExternalProducts();
   }, []);
 
-  const loadProducts = async () => {
+  const loadInternalProducts = async () => {
     try {
-      // Port-forward: frontend su 3000, backend su 3001
       const response = await fetch('http://localhost:3001/api/products');
       const data = await response.json();
-      setProducts(data.products || []);
+      setInternalProducts(data.products || []);
     } catch (error) {
-      console.error('Error loading products:', error);
-      setProducts([]);
+      console.error('Error loading internal products:', error);
+    }
+  };
+
+  const loadExternalProducts = async () => {
+    try {
+      const response = await fetch('http://localhost:3001/api/products/external');
+      const data = await response.json();
+      setExternalProducts(data.products || []);
+    } catch (error) {
+      console.error('Error loading external products:', error);
     }
   };
 
   const testLoadBalancing = async () => {
     setLoading(true);
     try {
-      // Port-forward: backend su 3001
       const response = await fetch('http://localhost:3001/api/server-info');
       const data = await response.json();
       setServerInfo(data);
     } catch (error) {
-      console.error('Error testing load balancing:', error);
+      console.error('Error:', error);
       setServerInfo({ error: 'Failed to connect' });
     }
     setLoading(false);
   };
 
   return (
-    <div style={styles.container}>
+    <div style={{ maxWidth: '1000px', margin: '0 auto', padding: '20px', fontFamily: 'Arial, sans-serif' }}>
       
       {/* Header */}
-      <header style={styles.header}>
-        <h1 style={styles.title}>🛍️ TechStore Demo</h1>
-        <p style={styles.subtitle}>Multi-Tenant E-commerce Platform</p>
-      </header>
+      <div style={{ textAlign: 'center', marginBottom: '40px' }}>
+        <h1 style={{ color: '#333', fontSize: '2.2rem', marginBottom: '10px' }}>
+          🛍️ TechStore
+        </h1>
+        <p style={{ color: '#666', fontSize: '1.1rem' }}>
+          Multi-Tenant E-commerce Platform Demo
+        </p>
+      </div>
 
-      {/* Products Section */}
-      <section style={styles.section}>
-        <h2 style={styles.sectionTitle}>🛒 Latest Products</h2>
-        <div style={styles.productGrid}>
-          {products.length === 0 ? (
-            <p style={styles.loading}>Loading products...</p>
-          ) : (
-            products.map(product => (
-              <div key={product.id} style={styles.productCard}>
-                <h3 style={styles.productName}>{product.name}</h3>
-                <p style={styles.productPrice}>${product.price}</p>
-                <p style={styles.productDescription}>{product.description}</p>
+      {/* Store Sections */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '30px', marginBottom: '40px' }}>
+        
+        {/* Internal Products */}
+        <div>
+          <h2 style={{ color: '#444', borderBottom: '2px solid #007bff', paddingBottom: '10px' }}>
+            📦 Store Catalog
+          </h2>
+          <p style={{ color: '#666', marginBottom: '20px' }}>
+            Products from our main inventory
+          </p>
+          
+          <div style={{ display: 'grid', gap: '15px' }}>
+            {internalProducts.map(product => (
+              <div key={product.id} style={{
+                border: '1px solid #ddd',
+                borderRadius: '8px',
+                padding: '15px',
+                backgroundColor: '#f8f9fa'
+              }}>
+                <h3 style={{ margin: '0 0 8px 0', color: '#333', fontSize: '1.1rem' }}>
+                  {product.name}
+                </h3>
+                <p style={{ margin: '0 0 8px 0', color: '#28a745', fontWeight: 'bold' }}>
+                  ${product.price}
+                </p>
+                <p style={{ margin: 0, color: '#666', fontSize: '0.9rem' }}>
+                  {product.description}
+                </p>
               </div>
-            ))
-          )}
+            ))}
+          </div>
         </div>
-      </section>
 
-      {/* Load Balancing Demo Section */}
-      <section style={styles.section}>
-        <h2 style={styles.sectionTitle}>⚖️ Load Balancing Demo</h2>
-        <p style={styles.description}>
-          Click the button multiple times to see requests hitting different backend pods
+        {/* External Products */}
+        <div>
+          <h2 style={{ color: '#444', borderBottom: '2px solid #28a745', paddingBottom: '10px' }}>
+            🌐 Partner Catalog
+          </h2>
+          <p style={{ color: '#666', marginBottom: '20px' }}>
+            Products from external suppliers
+          </p>
+          
+          <div style={{ display: 'grid', gap: '15px' }}>
+            {externalProducts.map(product => (
+              <div key={product.id} style={{
+                border: '1px solid #ddd',
+                borderRadius: '8px',
+                padding: '15px',
+                backgroundColor: '#f0f8f0'
+              }}>
+                <h3 style={{ margin: '0 0 8px 0', color: '#333', fontSize: '1.1rem' }}>
+                  {product.name}
+                </h3>
+                <p style={{ margin: '0 0 8px 0', color: '#28a745', fontWeight: 'bold' }}>
+                  ${product.price}
+                </p>
+                <p style={{ margin: '0 0 8px 0', color: '#666', fontSize: '0.9rem' }}>
+                  {product.description}
+                </p>
+                {product.category && (
+                  <span style={{
+                    backgroundColor: '#28a745',
+                    color: 'white',
+                    padding: '2px 6px',
+                    borderRadius: '4px',
+                    fontSize: '0.8rem'
+                  }}>
+                    {product.category}
+                  </span>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Load Balancing Test */}
+      <div style={{ 
+        backgroundColor: '#f8f9fa', 
+        border: '1px solid #dee2e6', 
+        borderRadius: '8px', 
+        padding: '30px',
+        textAlign: 'center'
+      }}>
+        <h2 style={{ color: '#444', marginBottom: '15px' }}>
+          ⚖️ Load Balancing Test
+        </h2>
+        <p style={{ color: '#666', marginBottom: '20px' }}>
+          Click the button to see which backend server handles your request
         </p>
         
         <button 
           onClick={testLoadBalancing}
           disabled={loading}
-          style={styles.button}
+          style={{
+            backgroundColor: loading ? '#6c757d' : '#007bff',
+            color: 'white',
+            border: 'none',
+            padding: '12px 30px',
+            borderRadius: '6px',
+            fontSize: '16px',
+            cursor: loading ? 'not-allowed' : 'pointer',
+            marginBottom: '20px'
+          }}
         >
-          {loading ? '🔄 Loading...' : '🎯 Test Load Balancing'}
+          {loading ? 'Testing...' : 'Test Load Balancing'}
         </button>
 
         {serverInfo && (
-          <div style={styles.serverInfo}>
-            <h4 style={styles.serverTitle}>📊 Current Backend Pod:</h4>
+          <div style={{
+            backgroundColor: 'white',
+            border: '1px solid #dee2e6',
+            borderRadius: '6px',
+            padding: '20px',
+            textAlign: 'left'
+          }}>
+            <h4 style={{ margin: '0 0 15px 0', color: '#333' }}>
+              Current Server:
+            </h4>
             {serverInfo.error ? (
-              <p style={styles.error}>{serverInfo.error}</p>
+              <p style={{ color: '#dc3545', margin: 0 }}>
+                {serverInfo.error}
+              </p>
             ) : (
-              <div style={styles.podInfo}>
-                <div style={styles.podDetail}>
-                  <strong>Pod Name:</strong> <span style={styles.highlight}>{serverInfo.hostname}</span>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                <div>
+                  <strong>Pod Name:</strong> {serverInfo.hostname}
                 </div>
-                <div style={styles.podDetail}>
+                <div>
                   <strong>Pod IP:</strong> {serverInfo.podIP}
                 </div>
-                <div style={styles.podDetail}>
+                <div>
                   <strong>Node:</strong> {serverInfo.nodeName}
                 </div>
-                <div style={styles.podDetail}>
-                  <strong>Timestamp:</strong> {new Date(serverInfo.timestamp).toLocaleTimeString()}
+                <div>
+                  <strong>Uptime:</strong> {serverInfo.uptime}s
                 </div>
               </div>
             )}
           </div>
         )}
-      </section>
+      </div>
 
-      {/* Business Value Footer */}
-      <footer style={styles.footer}>
-        <div style={styles.metrics}>
-          <div style={styles.metric}>
-            <span style={styles.metricValue}>2</span>
-            <span style={styles.metricLabel}>Backend Pods</span>
-          </div>
-          <div style={styles.metric}>
-            <span style={styles.metricValue}>30s</span>
-            <span style={styles.metricLabel}>Deploy Time</span>
-          </div>
-          <div style={styles.metric}>
-            <span style={styles.metricValue}>100%</span>
-            <span style={styles.metricLabel}>Availability</span>
-          </div>
-        </div>
-        <p style={styles.footerText}>
-          <strong>Architecture:</strong> React Frontend → Kubernetes Service → Multiple Backend Pods
+      {/* Footer */}
+      <div style={{ 
+        marginTop: '40px', 
+        textAlign: 'center', 
+        color: '#666',
+        borderTop: '1px solid #dee2e6',
+        paddingTop: '20px'
+      }}>
+        <p style={{ margin: 0, fontSize: '0.9rem' }}>
+          <strong>Architecture:</strong> React Frontend → Kubernetes Service → Multiple Backend Pods → External Database
         </p>
-      </footer>
-
+      </div>
     </div>
   );
-};
-
-// Inline styles for simplicity
-const styles = {
-  container: {
-    maxWidth: '1000px',
-    margin: '0 auto',
-    padding: '20px',
-    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-    backgroundColor: '#f5f7fa',
-    minHeight: '100vh'
-  },
-  header: {
-    textAlign: 'center',
-    marginBottom: '40px',
-    padding: '30px',
-    backgroundColor: '#ffffff',
-    borderRadius: '12px',
-    boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
-  },
-  title: {
-    color: '#2d3748',
-    margin: '0 0 10px 0',
-    fontSize: '2.5rem'
-  },
-  subtitle: {
-    color: '#718096',
-    margin: 0,
-    fontSize: '1.1rem'
-  },
-  section: {
-    marginBottom: '40px',
-    padding: '30px',
-    backgroundColor: '#ffffff',
-    borderRadius: '12px',
-    boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
-  },
-  sectionTitle: {
-    color: '#2d3748',
-    marginTop: 0,
-    marginBottom: '20px',
-    fontSize: '1.5rem'
-  },
-  description: {
-    color: '#4a5568',
-    marginBottom: '20px',
-    lineHeight: '1.6'
-  },
-  productGrid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-    gap: '20px'
-  },
-  productCard: {
-    padding: '20px',
-    backgroundColor: '#f7fafc',
-    borderRadius: '8px',
-    border: '1px solid #e2e8f0'
-  },
-  productName: {
-    color: '#2d3748',
-    marginTop: 0,
-    marginBottom: '10px',
-    fontSize: '1.2rem'
-  },
-  productPrice: {
-    color: '#38a169',
-    fontWeight: 'bold',
-    fontSize: '1.1rem',
-    marginBottom: '10px'
-  },
-  productDescription: {
-    color: '#718096',
-    margin: 0,
-    fontSize: '0.9rem'
-  },
-  loading: {
-    color: '#718096',
-    textAlign: 'center',
-    fontSize: '1.1rem'
-  },
-  button: {
-    backgroundColor: '#4299e1',
-    color: 'white',
-    border: 'none',
-    padding: '15px 30px',
-    borderRadius: '8px',
-    cursor: 'pointer',
-    fontSize: '16px',
-    fontWeight: 'bold',
-    transition: 'background-color 0.3s',
-    marginBottom: '20px'
-  },
-  serverInfo: {
-    backgroundColor: '#f7fafc',
-    padding: '20px',
-    borderRadius: '8px',
-    border: '1px solid #e2e8f0'
-  },
-  serverTitle: {
-    color: '#2d3748',
-    marginTop: 0,
-    marginBottom: '15px'
-  },
-  podInfo: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-    gap: '10px'
-  },
-  podDetail: {
-    color: '#4a5568',
-    fontSize: '0.95rem'
-  },
-  highlight: {
-    color: '#e53e3e',
-    fontWeight: 'bold',
-    backgroundColor: '#fed7d7',
-    padding: '2px 6px',
-    borderRadius: '4px'
-  },
-  error: {
-    color: '#e53e3e',
-    fontWeight: 'bold'
-  },
-  footer: {
-    textAlign: 'center',
-    padding: '30px',
-    backgroundColor: '#2d3748',
-    color: '#e2e8f0',
-    borderRadius: '12px'
-  },
-  metrics: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(3, 1fr)',
-    gap: '20px',
-    marginBottom: '20px'
-  },
-  metric: {
-    textAlign: 'center'
-  },
-  metricValue: {
-    display: 'block',
-    fontSize: '2rem',
-    fontWeight: 'bold',
-    color: '#81e6d9'
-  },
-  metricLabel: {
-    display: 'block',
-    fontSize: '0.9rem',
-    color: '#a0aec0',
-    marginTop: '5px'
-  },
-  footerText: {
-    margin: 0,
-    fontSize: '0.95rem',
-    color: '#cbd5e0'
-  }
-};
+}
 
 export default App;

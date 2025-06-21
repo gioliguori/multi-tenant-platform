@@ -16,6 +16,7 @@ topology:
         - ip addr add dev eth1 10.1.1.2/24 broadcast 10.1.1.255
         - ip addr add dev eth2 10.1.2.2/24 broadcast 10.1.2.255
         - ip addr add dev eth10 192.168.101.1/24 broadcast 192.168.101.255
+        - ip addr add dev eth11 192.168.101.1/24 broadcast 192.168.101.255
         - route del default gw 172.20.20.1
         - route add default gw 10.1.1.1
         - route add default gw 10.1.2.1
@@ -81,6 +82,26 @@ topology:
         - ip addr add dev eth1 192.168.102.2/24 broadcast 192.168.102.255
         - route del default gw 172.20.20.1
         - route add default gw 192.168.102.1
+    # 🆕 AUTOMATED: PostgreSQL with Environment Variables
+    external-db:
+      image: postgres:13-alpine
+      group: external
+      labels:
+        graph-icon: database
+      mgmt-ipv4: 172.20.20.15
+      env:
+        POSTGRES_DB: techstore
+        POSTGRES_USER: api
+        POSTGRES_PASSWORD: secret123
+        # 🆕 AUTOMATIC: Allow all connections without manual config
+        POSTGRES_HOST_AUTH_METHOD: trust
+        POSTGRES_INITDB_ARGS: "--auth-host=trust"
+      binds:
+        - configs/external-db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+      exec:
+        - ip addr add dev eth1 192.168.101.2/24 broadcast 192.168.101.255
+        - route del default gw 172.20.20.1
+        - route add default gw 192.168.101.1
     graphite:
       kind: linux
       image: netreplica/graphite
@@ -102,3 +123,4 @@ topology:
     - endpoints: ["leaf2:eth2","spine2:eth2"]
     - endpoints: ["h1:eth1","leaf1:eth10"]
     - endpoints: ["h2:eth1","leaf2:eth10"]
+    - endpoints: ["external-db:eth1","leaf1:eth11"]

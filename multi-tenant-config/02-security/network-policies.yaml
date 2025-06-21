@@ -1,6 +1,7 @@
 # Network Policies per Isolamento Multi-Tenant
 # Created: Step 6 of multi-tenant implementation  
 # Purpose: Traffic-level isolation between teams with selective platform access
+# Updated: External database connectivity for team-backend
 
 # =============================================================================
 # DEFAULT DENY ALL POLICIES (Security by Default)
@@ -189,6 +190,40 @@ spec:
       port: 53
     - protocol: TCP
       port: 53
+
+# =============================================================================
+# 🆕 EXTERNAL DATABASE ACCESS (team-backend only)
+# =============================================================================
+
+# Allow team-backend to access external PostgreSQL database
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-external-database
+  namespace: team-backend
+  labels:
+    team: backend
+    component: network-security
+    policy-type: external-database-access
+    setup-step: "step-6-external-db"
+  annotations:
+    description: "Allow backend pods to access external PostgreSQL database"
+    database-host: "172.20.20.15:5432"
+    network-path: "pod → management-network → containerlab → external-db"
+    created-by: "multi-tenant-setup-external-db"
+spec:
+  podSelector: {}
+  policyTypes:
+  - Egress
+  egress:
+  # Allow access to external database (ContainerLab management network)
+  - to: []
+    ports:
+    - protocol: TCP
+      port: 5432  # PostgreSQL port
+  # Allow all other egress for external integrations
+  - to: []
 
 # =============================================================================
 # PLATFORM TEAM MONITORING ACCESS
