@@ -1,0 +1,87 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: react-store
+  namespace: team-frontend
+  labels:
+    app: react-store
+    team: frontend
+    component: web-app
+    tier: frontend
+  annotations:
+    description: "React demo app for multi-tenant platform showcase"
+    business-value: "Visual load balancing demonstration"
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: react-store
+      team: frontend
+  template:
+    metadata:
+      labels:
+        app: react-store
+        team: frontend
+        component: web-app
+        tier: frontend
+        monitoring: "enabled"  # Allow platform team monitoring
+      annotations:
+        prometheus.io/scrape: "false"  # React dev server doesn't have metrics
+    spec:
+      serviceAccountName: team-frontend-sa
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 3000
+        fsGroup: 2000
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+      - name: react-store
+        image: react-store:latest
+        imagePullPolicy: Never  # Local development with Kind
+        ports:
+        - containerPort: 3000
+          name: http
+          protocol: TCP
+        env:
+        - name: NODE_ENV
+          value: "development"
+        - name: REACT_APP_API_URL
+          value: "http://localhost:3001"  # Port-forward backend access
+        - name: REACT_APP_TEAM
+          value: "frontend"
+        - name: REACT_APP_NAMESPACE
+          value: "team-frontend"
+        resources:
+          requests:
+            cpu: 200m
+            memory: 1Gi
+          limits:
+            cpu: 1000m
+            memory: 3Gi
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          readOnlyRootFilesystem: false  # React dev server needs write access
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 3000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 3000
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 3
+          successThreshold: 1
+          failureThreshold: 3
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 30

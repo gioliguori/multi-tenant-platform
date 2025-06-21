@@ -1,0 +1,144 @@
+# ============================================================================= 
+# ENTERPRISE FEATURES - HPA, PDB, INGRESS
+# Integration with existing multi-tenant security
+# =============================================================================
+
+# Frontend HPA - Auto-scaling for load demos
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: react-store-hpa
+  namespace: team-frontend
+  labels:
+    app: react-store
+    team: frontend
+    component: autoscaling
+  annotations:
+    description: "Auto-scaling for React store demo"
+    business-value: "Automatic scaling during load tests"
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: react-store
+  minReplicas: 2
+  maxReplicas: 5
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 50
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 60
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: 60
+      policies:
+      - type: Percent
+        value: 100
+        periodSeconds: 15
+    scaleDown:
+      stabilizationWindowSeconds: 300
+      policies:
+      - type: Percent
+        value: 10
+        periodSeconds: 60
+
+# Backend HPA - Auto-scaling for API
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: users-api-hpa
+  namespace: team-backend
+  labels:
+    app: users-api
+    team: backend
+    component: autoscaling
+  annotations:
+    description: "Auto-scaling for users API"
+    business-value: "Automatic scaling based on API load"
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: users-api
+  minReplicas: 2
+  maxReplicas: 4
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 60
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 70
+
+# ============================================================================= 
+# POD DISRUPTION BUDGETS - High Availability
+# ============================================================================= 
+
+# Frontend PDB - Ensure availability during maintenance
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: react-store-pdb
+  namespace: team-frontend
+  labels:
+    app: react-store
+    team: frontend
+    component: availability
+  annotations:
+    description: "Ensure frontend availability during node maintenance"
+    business-value: "Zero downtime during infrastructure changes"
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: react-store
+      team: frontend
+
+# Backend PDB - Ensure API availability
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: users-api-pdb
+  namespace: team-backend
+  labels:
+    app: users-api
+    team: backend
+    component: availability
+  annotations:
+    description: "Ensure backend API availability during maintenance"
+    business-value: "API always available during cluster operations"
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: users-api
+      team: backend
+
+# ============================================================================= 
+# INGRESS - SKIPPED (Port-forward approach)
+# ============================================================================= 
+
+# NOTE: Ingress setup skipped for demo simplicity
+# Using port-forward instead:
+# kubectl port-forward -n team-frontend svc/react-store 3000:3000
+# kubectl port-forward -n team-backend svc/users-api 3001:3000
+
+# For production demos, add ingress controller setup here

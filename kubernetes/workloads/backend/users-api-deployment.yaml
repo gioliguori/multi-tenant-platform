@@ -1,0 +1,120 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: users-api
+  namespace: team-backend
+  labels:
+    app: users-api
+    team: backend
+    component: api
+    tier: backend
+  annotations:
+    description: "Backend API for multi-tenant platform demo"
+    business-value: "Load balancing and microservices demonstration"
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: users-api
+      team: backend
+  template:
+    metadata:
+      labels:
+        app: users-api
+        team: backend
+        component: api
+        tier: backend
+        monitoring: "enabled"  # Allow platform team monitoring
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "3000"
+        prometheus.io/path: "/api/health"
+    spec:
+      serviceAccountName: team-backend-sa
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1001  # nodejs user from Dockerfile
+        runAsGroup: 1001
+        fsGroup: 1001
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+      - name: users-api
+        image: users-api:latest
+        imagePullPolicy: Never  # Local development with Kind
+        ports:
+        - containerPort: 3000
+          name: http
+          protocol: TCP
+        env:
+        - name: NODE_ENV
+          value: "production"
+        - name: PORT
+          value: "3000"
+        - name: HOSTNAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: POD_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
+        - name: NODE_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName
+        - name: NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        resources:
+          requests:
+            cpu: 200m
+            memory: 256Mi
+          limits:
+            cpu: 1000m
+            memory: 1Gi
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          readOnlyRootFilesystem: true
+        volumeMounts:
+        - name: tmp
+          mountPath: /tmp
+        - name: app-tmp
+          mountPath: /app/tmp
+        livenessProbe:
+          httpGet:
+            path: /api/health
+            port: 3000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /api/health
+            port: 3000
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 3
+          successThreshold: 1
+          failureThreshold: 3
+        startupProbe:
+          httpGet:
+            path: /api/health
+            port: 3000
+          initialDelaySeconds: 10
+          periodSeconds: 2
+          timeoutSeconds: 1
+          successThreshold: 1
+          failureThreshold: 15
+      volumes:
+      - name: tmp
+        emptyDir: {}
+      - name: app-tmp
+        emptyDir: {}
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 30
