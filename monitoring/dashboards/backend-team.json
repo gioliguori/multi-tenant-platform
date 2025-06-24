@@ -1,0 +1,151 @@
+{
+  "id": null,
+  "uid": "backend-team",
+  "title": "⚙️ Backend Team Dashboard",
+  "tags": ["backend", "team"],
+  "timezone": "browser",
+  "refresh": "30s",
+  "time": {
+    "from": "now-1h",
+    "to": "now"
+  },
+  "panels": [
+    {
+      "id": 1,
+      "title": "🔗 Backend Pods Status",
+      "type": "stat",
+      "gridPos": {"h": 4, "w": 12, "x": 0, "y": 0},
+      "targets": [{
+        "expr": "count(kube_pod_info{namespace=\"team-backend\"})",
+        "legendFormat": "Active Pods",
+        "refId": "A"
+      }],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {"mode": "thresholds"},
+          "thresholds": {
+            "steps": [
+              {"color": "red", "value": 0},
+              {"color": "green", "value": 1}
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 2,
+      "title": "🔥 API Request Rate",
+      "type": "stat",
+      "gridPos": {"h": 4, "w": 12, "x": 12, "y": 0},
+      "targets": [{
+        "expr": "rate(http_requests_total{namespace=\"team-backend\"}[5m])",
+        "legendFormat": "Requests/sec",
+        "refId": "A"
+      }],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "color": {"mode": "thresholds"},
+          "thresholds": {
+            "steps": [
+              {"color": "green", "value": 0},
+              {"color": "yellow", "value": 1},
+              {"color": "red", "value": 10}
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 3,
+      "title": "💾 Memory Usage (Backend Only)",
+      "type": "timeseries",
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 4},
+      "targets": [{
+        "expr": "sum(container_memory_usage_bytes{namespace=\"team-backend\", container!=\"\"}) by (pod)",
+        "legendFormat": "{{pod}}",
+        "refId": "A"
+      }],
+      "fieldConfig": {
+        "defaults": {"unit": "bytes"}
+      }
+    },
+    {
+      "id": 4,
+      "title": "⚡ CPU Usage (Backend Only)",
+      "type": "timeseries",
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 4},
+      "targets": [{
+        "expr": "sum(rate(container_cpu_usage_seconds_total{namespace=\"team-backend\", container!=\"\"}[5m])) by (pod)",
+        "legendFormat": "{{pod}}",
+        "refId": "A"
+      }],
+      "fieldConfig": {
+        "defaults": {"unit": "short"}
+      }
+    },
+    {
+      "id": 5,
+      "title": "🗄️ Database Queries Rate",
+      "type": "timeseries",
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 12},
+      "targets": [{
+        "expr": "rate(external_db_queries_total{namespace=\"team-backend\"}[5m])",
+        "legendFormat": "{{pod}} - DB Queries/sec",
+        "refId": "A"
+      }],
+      "fieldConfig": {
+        "defaults": {"unit": "qps"}
+      }
+    },
+    {
+      "id": 6,
+      "title": "🚨 API Errors Rate",
+      "type": "timeseries",
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 12},
+      "targets": [{
+        "expr": "rate(api_errors_total{namespace=\"team-backend\"}[5m])",
+        "legendFormat": "{{pod}} - Errors/sec",
+        "refId": "A"
+      }],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "eps",
+          "color": {"mode": "thresholds"},
+          "thresholds": {
+            "steps": [
+              {"color": "green", "value": 0},
+              {"color": "yellow", "value": 0.1},
+              {"color": "red", "value": 1}
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 7,
+      "title": "⏱️ Application Uptime",
+      "type": "stat",
+      "gridPos": {"h": 4, "w": 24, "x": 0, "y": 20},
+      "targets": [{
+        "expr": "app_uptime_seconds{namespace=\"team-backend\"}",
+        "legendFormat": "{{pod}}",
+        "refId": "A"
+      }],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "color": {"mode": "thresholds"},
+          "thresholds": {
+            "steps": [
+              {"color": "red", "value": 0},
+              {"color": "yellow", "value": 60},
+              {"color": "green", "value": 300}
+            ]
+          }
+        }
+      }
+    }
+  ]
+}

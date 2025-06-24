@@ -1,0 +1,24 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: team-platform
+
+# ConfigMap generator dai JSON files
+configMapGenerator:
+- name: grafana-platform-dashboards
+  files:
+  - platform-overview.json=dashboards/platform-overview.json
+  - frontend-team.json=dashboards/frontend-team.json
+  - backend-team.json=dashboards/backend-team.json
+  options:
+    labels:
+      grafana_dashboard: "1"
+      team: platform
+      app.kubernetes.io/part-of: multi-tenant-platform
+
+# Common labels
+labels:
+- pairs:
+    app.kubernetes.io/part-of: multi-tenant-platform
+    app.kubernetes.io/component: monitoring
+    app.kubernetes.io/managed-by: kustomize

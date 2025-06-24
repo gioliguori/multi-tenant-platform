@@ -1,0 +1,103 @@
+{
+  "id": null,
+  "uid": "platform-overview",
+  "title": "🏢 Platform Overview - All Teams",
+  "tags": ["platform", "overview", "multi-tenant"],
+  "timezone": "browser",
+  "refresh": "30s",
+  "time": {
+    "from": "now-1h",
+    "to": "now"
+  },
+  "panels": [
+    {
+      "id": 1,
+      "title": "💾 Memory Usage per Team",
+      "type": "piechart",
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0},
+      "targets": [{
+        "expr": "sum(container_memory_usage_bytes{namespace=~\"team-.*\", container!=\"\"}) by (namespace)",
+        "legendFormat": "{{namespace}}",
+        "refId": "A"
+      }],
+      "fieldConfig": {
+        "defaults": {"unit": "bytes"}
+      },
+      "options": {
+        "pieType": "pie",
+        "legend": {"displayMode": "table", "placement": "right"}
+      }
+    },
+    {
+      "id": 2,
+      "title": "⚡ CPU Usage per Team",
+      "type": "timeseries",
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0},
+      "targets": [{
+        "expr": "sum(rate(container_cpu_usage_seconds_total{namespace=~\"team-.*\", container!=\"\"}[5m])) by (namespace)",
+        "legendFormat": "{{namespace}}",
+        "refId": "A"
+      }],
+      "fieldConfig": {
+        "defaults": {"unit": "short"}
+      }
+    },
+    {
+      "id": 3,
+      "title": "📊 Pod Count per Team",
+      "type": "stat",
+      "gridPos": {"h": 4, "w": 24, "x": 0, "y": 8},
+      "targets": [{
+        "expr": "count(kube_pod_info{namespace=~\"team-.*\"}) by (namespace)",
+        "legendFormat": "{{namespace}}",
+        "refId": "A"
+      }],
+      "fieldConfig": {
+        "defaults": {"unit": "short"}
+      }
+    },
+    {
+      "id": 4,
+      "title": "🔄 Restart Count per Pod",
+      "type": "timeseries",
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 12},
+      "targets": [{
+        "expr": "kube_pod_container_status_restarts_total{namespace=~\"team-.*\"}",
+        "legendFormat": "{{namespace}}/{{pod}}",
+        "refId": "A"
+      }],
+      "fieldConfig": {
+        "defaults": {"unit": "short"}
+      }
+    },
+    {
+      "id": 5,
+      "title": "💰 Resource Quota Usage",
+      "type": "bargauge",
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 12},
+      "targets": [{
+        "expr": "100 * kube_resourcequota{namespace=~\"team-.*\", type=\"used\"} / kube_resourcequota{namespace=~\"team-.*\", type=\"hard\"}",
+        "legendFormat": "{{namespace}} - {{resource}}",
+        "refId": "A"
+      }],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "thresholds": {
+            "steps": [
+              {"color": "green", "value": 0},
+              {"color": "yellow", "value": 70},
+              {"color": "red", "value": 90}
+            ]
+          }
+        }
+      },
+      "options": {
+        "orientation": "horizontal",
+        "displayMode": "gradient"
+      }
+    }
+  ]
+}

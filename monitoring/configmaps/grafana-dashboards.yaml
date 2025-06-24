@@ -1,0 +1,17 @@
+# Grafana Dashboards ConfigMap
+# File: monitoring/configmaps/grafana-dashboards.yaml
+# NOTA: Questo viene generato automaticamente dai comandi, ma può essere usato come template
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-platform-dashboards
+  namespace: team-platform
+  labels:
+    grafana_dashboard: "1"
+    team: platform
+    app.kubernetes.io/part-of: multi-tenant-platform
+data:
+  # I contenuti JSON vengono popolati automaticamente dai comandi kubectl create configmap
+  # Questo file serve come template per capire la struttura
+  # Usa invece: kubectl create configmap ... --from-file=...

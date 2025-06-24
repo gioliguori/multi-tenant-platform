@@ -1,0 +1,65 @@
+{
+  "id": null,
+  "uid": "frontend-team",
+  "title": "🎨 Frontend Team Dashboard",
+  "tags": ["frontend", "team"],
+  "timezone": "browser",
+  "refresh": "30s",
+  "time": {
+    "from": "now-1h",
+    "to": "now"
+  },
+  "panels": [
+    {
+      "id": 1,
+      "title": "🖥️ Frontend Pods Status",
+      "type": "stat",
+      "gridPos": {"h": 4, "w": 12, "x": 0, "y": 0},
+      "targets": [{
+        "expr": "count(kube_pod_info{namespace=\"team-frontend\"})",
+        "legendFormat": "Total Pods",
+        "refId": "A"
+      }],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {"mode": "thresholds"},
+          "thresholds": {
+            "steps": [
+              {"color": "red", "value": 0},
+              {"color": "green", "value": 1}
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 2,
+      "title": "💾 Memory Usage (Frontend Only)",
+      "type": "timeseries",
+      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 4},
+      "targets": [{
+        "expr": "sum(container_memory_usage_bytes{namespace=\"team-frontend\", container!=\"\"}) by (pod)",
+        "legendFormat": "{{pod}}",
+        "refId": "A"
+      }],
+      "fieldConfig": {
+        "defaults": {"unit": "bytes"}
+      }
+    },
+    {
+      "id": 3,
+      "title": "⚡ CPU Usage (Frontend Only)",
+      "type": "timeseries",
+      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 12},
+      "targets": [{
+        "expr": "sum(rate(container_cpu_usage_seconds_total{namespace=\"team-frontend\", container!=\"\"}[5m])) by (pod)",
+        "legendFormat": "{{pod}}",
+        "refId": "A"
+      }],
+      "fieldConfig": {
+        "defaults": {"unit": "short"}
+      }
+    }
+  ]
+}

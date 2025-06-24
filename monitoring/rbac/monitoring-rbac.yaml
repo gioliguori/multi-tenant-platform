@@ -1,0 +1,90 @@
+# Monitoring RBAC Extensions
+# File: monitoring/rbac/monitoring-rbac.yaml
+# ONLY extends existing team-platform RBAC for specific monitoring needs
+
+# NOTE: team-platform-sa already has ClusterRole "team-platform-cluster-role" 
+# with full permissions ("*" on "*"). We only need specific extensions for
+# Prometheus Operator CRDs that might not be covered.
+
+---
+# Additional ClusterRole ONLY for Prometheus Operator CRDs
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: prometheus-operator-extension
+  labels:
+    app.kubernetes.io/part-of: multi-tenant-platform
+    component: monitoring-extension
+rules:
+# Prometheus Operator CRDs (only if not already covered by existing "*" permissions)
+- apiGroups: ["monitoring.coreos.com"]
+  resources:
+    - servicemonitors
+    - podmonitors
+    - prometheusrules
+    - prometheuses
+    - alertmanagers
+    - thanosrulers
+  verbs: ["*"]
+
+# Additional aggregated cluster roles for discovery
+- apiGroups: ["apiregistration.k8s.io"]
+  resources:
+    - apiservices
+  verbs: ["get", "list", "watch"]
+
+---
+# Bind ONLY the extension to existing platform ServiceAccount
+# (team-platform-sa already has cluster-admin via team-platform-cluster-role)
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: team-platform-monitoring-extension
+  labels:
+    app.kubernetes.io/part-of: multi-tenant-platform
+    component: monitoring-extension
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: prometheus-operator-extension
+subjects:
+- kind: ServiceAccount
+  name: team-platform-sa
+  namespace: team-platform
+
+---
+# Verification ConfigMap (for troubleshooting)
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: rbac-monitoring-notes
+  namespace: team-platform
+  labels:
+    app.kubernetes.io/part-of: multi-tenant-platform
+    component: monitoring-docs
+data:
+  existing-rbac.md: |
+    # RBAC Configuration Notes
+    
+    ## Existing RBAC (from multi-tenant-config/)
+    - ServiceAccount: team-platform-sa 
+    - ClusterRole: team-platform-cluster-role (permissions: "*" on "*")
+    - ClusterRoleBinding: team-platform-cluster-binding
+    
+    ## Monitoring Extensions (this file)
+    - ClusterRole: prometheus-operator-extension (Prometheus CRDs only)
+    - ClusterRoleBinding: team-platform-monitoring-extension
+    
+    ## Verification Commands
+    ```bash
+    # Check existing permissions
+    kubectl auth can-i "*" "*" --as=system:serviceaccount:team-platform:team-platform-sa
+    
+    # Check specific monitoring permissions
+    kubectl auth can-i get servicemonitors --as=system:serviceaccount:team-platform:team-platform-sa -A
+    kubectl auth can-i get pods --as=system:serviceaccount:team-platform:team-platform-sa -A
+    kubectl auth can-i get nodes --as=system:serviceaccount:team-platform:team-platform-sa
+    ```
+    
+    ## Result
+    team-platform-sa should have full access to everything needed for monitoring.

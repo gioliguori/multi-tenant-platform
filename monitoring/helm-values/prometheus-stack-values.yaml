@@ -1,0 +1,66 @@
+# Prometheus Stack Configuration - FIXED VERSION
+fullnameOverride: "prometheus"
+namespaceOverride: "team-platform"
+
+prometheus:
+  prometheusSpec:
+    retention: 15d
+    retentionSize: 10GB
+    storageSpec: {}
+    resources:
+      requests:
+        cpu: 200m
+        memory: 512Mi
+      limits:
+        cpu: 1000m
+        memory: 2Gi
+
+grafana:
+  adminUser: admin
+  adminPassword: admin123
+  
+  serviceAccount:
+    create: true
+  
+  service:
+    type: ClusterIP
+    port: 80
+  
+  persistence:
+    enabled: false
+  
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 1Gi
+
+  sidecar:
+    dashboards:
+      enabled: true
+      label: grafana_dashboard
+      labelValue: "1"
+      folder: /tmp/dashboards
+      searchNamespace: team-platform
+
+  # FIX: Removed custom datasource - let Helm create default ones
+
+alertmanager:
+  alertmanagerSpec:
+    storage: {}
+
+nodeExporter:
+  enabled: true
+kubeStateMetrics:
+  enabled: true
+
+kubeEtcd:
+  enabled: false
+kubeControllerManager:
+  enabled: false
+kubeScheduler:
+  enabled: false
+kubeProxy:
+  enabled: false
