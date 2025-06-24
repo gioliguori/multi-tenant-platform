@@ -15,7 +15,8 @@ let metrics = {
   external_db_queries_total: 0,
   db_connections_total: 0,
   api_errors_total: 0,
-  startup_time: Date.now()
+  startup_time: Date.now(),
+  db_connection_status: 1  // 🆕 ADD: 1 = connected, 0 = disconnected
 };
 
 // PostgreSQL connection pool
@@ -68,7 +69,7 @@ app.get('/', (req, res) => {
   });
 });
 
-// METRICS ENDPOINT
+// METRICS ENDPOINT - 🆕 UPDATED with db_connection_status
 app.get('/metrics', (req, res) => {
   const podInfo = getPodInfo();
   const uptime = Math.floor((Date.now() - metrics.startup_time) / 1000);
@@ -89,6 +90,10 @@ db_connections_total{namespace="team-backend",pod="${podInfo.hostname}"} ${metri
 # HELP api_errors_total API errors
 # TYPE api_errors_total counter
 api_errors_total{namespace="team-backend",pod="${podInfo.hostname}"} ${metrics.api_errors_total}
+
+# HELP db_connection_status Database connection status (1=connected, 0=disconnected)
+# TYPE db_connection_status gauge
+db_connection_status{namespace="team-backend",pod="${podInfo.hostname}",database="external-postgresql",host="172.20.20.15"} ${metrics.db_connection_status}
 
 # HELP app_uptime_seconds Application uptime
 # TYPE app_uptime_seconds gauge
@@ -113,7 +118,7 @@ app.get('/api/products', (req, res) => {
   });
 });
 
-// EXTERNAL PRODUCTS API
+// EXTERNAL PRODUCTS API - 🆕 UPDATED with connection status tracking
 app.get('/api/products/external', async (req, res) => {
   try {
     metrics.external_db_queries_total++;
@@ -128,27 +133,32 @@ app.get('/api/products/external', async (req, res) => {
     `);
     
     const duration = Date.now() - startTime;
+    metrics.db_connection_status = 1;  // 🆕 UPDATE: Success = connected
 
     res.json({
       products: result.rows,
       metadata: {
         source: 'external-database',
         query_duration_ms: duration,
+        connection_status: 'connected',  // 🆕 ADD: Status in response
         ...getPodInfo()
       }
     });
 
   } catch (error) {
     metrics.api_errors_total++;
+    metrics.db_connection_status = 0;  // 🆕 UPDATE: Error = disconnected
+    
     res.status(503).json({
       error: 'Database connection failed',
       message: error.message,
+      connection_status: 'disconnected',  // 🆕 ADD: Status in response
       ...getPodInfo()
     });
   }
 });
 
-// DB TEST
+// DB TEST - 🆕 UPDATED with connection status tracking
 app.get('/api/db-test', async (req, res) => {
   try {
     metrics.db_connections_total++;
@@ -156,16 +166,22 @@ app.get('/api/db-test', async (req, res) => {
     const result = await client.query('SELECT version()');
     client.release();
     
+    metrics.db_connection_status = 1;  // 🆕 UPDATE: Success = connected
+    
     res.json({
       status: 'success',
+      connection_status: 'connected',  // 🆕 ADD: Status in response
       database_info: result.rows[0],
       ...getPodInfo()
     });
     
   } catch (error) {
     metrics.api_errors_total++;
+    metrics.db_connection_status = 0;  // 🆕 UPDATE: Error = disconnected
+    
     res.status(503).json({
       status: 'failed',
+      connection_status: 'disconnected',  // 🆕 ADD: Status in response
       error: error.message,
       ...getPodInfo()
     });
@@ -196,4 +212,5 @@ app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 TechStore API with Metrics running on port ${PORT}`);
   console.log(`🎯 Metrics endpoint: http://localhost:${PORT}/metrics`);
   console.log(`🏷️  Pod: ${getPodInfo().hostname}`);
+  console.log(`🗄️  Database: 172.20.20.15:5432`);
 });
