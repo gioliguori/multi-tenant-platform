@@ -3,7 +3,6 @@ kind: Kustomization
 
 namespace: team-platform
 
-# ConfigMap generator dai JSON files
 configMapGenerator:
 - name: grafana-platform-dashboards
   files:
@@ -16,7 +15,6 @@ configMapGenerator:
       team: platform
       app.kubernetes.io/part-of: multi-tenant-platform
 
-# Common labels
 labels:
 - pairs:
     app.kubernetes.io/part-of: multi-tenant-platform

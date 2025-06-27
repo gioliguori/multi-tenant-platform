@@ -24,7 +24,7 @@ spec:
         team: backend
         component: api
         tier: backend
-        monitoring: "enabled"  # Allow platform team monitoring
+        monitoring: "enabled"
       annotations:
         prometheus.io/scrape: "true"
         prometheus.io/port: "3000"
@@ -41,7 +41,7 @@ spec:
       containers:
       - name: users-api
         image: users-api:latest
-        imagePullPolicy: Never  # Local development with Kind
+        imagePullPolicy: Never
         ports:
         - containerPort: 3000
           name: http

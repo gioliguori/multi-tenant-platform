@@ -6,20 +6,17 @@ const os = require('os');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// =============================================================================
 // PROMETHEUS METRICS SETUP
-// =============================================================================
-
 let metrics = {
   http_requests_total: 0,
   external_db_queries_total: 0,
   db_connections_total: 0,
   api_errors_total: 0,
   startup_time: Date.now(),
-  db_connection_status: 1  // 🆕 ADD: 1 = connected, 0 = disconnected
+  db_connection_status: 1
 };
 
-// PostgreSQL connection pool
+// PostgreSQL
 const workingPool = new Pool({
   host: '172.20.20.15',
   port: 5432,
@@ -69,13 +66,13 @@ app.get('/', (req, res) => {
   });
 });
 
-// METRICS ENDPOINT - 🆕 UPDATED with db_connection_status
+// METRICS ENDPOINT
 app.get('/metrics', (req, res) => {
   const podInfo = getPodInfo();
   const uptime = Math.floor((Date.now() - metrics.startup_time) / 1000);
 
-  const prometheusMetrics = `
-# HELP http_requests_total Total HTTP requests
+  // NON INDENTARE ALTRIMENTI NON FUNZIONA PIU, LASCIA COSI
+  const prometheusMetrics = `# HELP http_requests_total Total HTTP requests
 # TYPE http_requests_total counter
 http_requests_total{namespace="team-backend",pod="${podInfo.hostname}"} ${metrics.http_requests_total}
 
@@ -101,7 +98,7 @@ app_uptime_seconds{namespace="team-backend",pod="${podInfo.hostname}"} ${uptime}
 `;
 
   res.set('Content-Type', 'text/plain');
-  res.send(prometheusMetrics.trim());
+  res.send(prometheusMetrics);
 });
 
 // PRODUCTS API
@@ -118,7 +115,7 @@ app.get('/api/products', (req, res) => {
   });
 });
 
-// EXTERNAL PRODUCTS API - 🆕 UPDATED with connection status tracking
+// EXTERNAL PRODUCTS API
 app.get('/api/products/external', async (req, res) => {
   try {
     metrics.external_db_queries_total++;
@@ -133,32 +130,32 @@ app.get('/api/products/external', async (req, res) => {
     `);
     
     const duration = Date.now() - startTime;
-    metrics.db_connection_status = 1;  // 🆕 UPDATE: Success = connected
+    metrics.db_connection_status = 1;
 
     res.json({
       products: result.rows,
       metadata: {
         source: 'external-database',
         query_duration_ms: duration,
-        connection_status: 'connected',  // 🆕 ADD: Status in response
+        connection_status: 'connected',
         ...getPodInfo()
       }
     });
 
   } catch (error) {
     metrics.api_errors_total++;
-    metrics.db_connection_status = 0;  // 🆕 UPDATE: Error = disconnected
+    metrics.db_connection_status = 0;
     
     res.status(503).json({
       error: 'Database connection failed',
       message: error.message,
-      connection_status: 'disconnected',  // 🆕 ADD: Status in response
+      connection_status: 'disconnected',
       ...getPodInfo()
     });
   }
 });
 
-// DB TEST - 🆕 UPDATED with connection status tracking
+// DB TEST
 app.get('/api/db-test', async (req, res) => {
   try {
     metrics.db_connections_total++;
@@ -166,22 +163,22 @@ app.get('/api/db-test', async (req, res) => {
     const result = await client.query('SELECT version()');
     client.release();
     
-    metrics.db_connection_status = 1;  // 🆕 UPDATE: Success = connected
+    metrics.db_connection_status = 1;
     
     res.json({
       status: 'success',
-      connection_status: 'connected',  // 🆕 ADD: Status in response
+      connection_status: 'connected',
       database_info: result.rows[0],
       ...getPodInfo()
     });
     
   } catch (error) {
     metrics.api_errors_total++;
-    metrics.db_connection_status = 0;  // 🆕 UPDATE: Error = disconnected
+    metrics.db_connection_status = 0;
     
     res.status(503).json({
       status: 'failed',
-      connection_status: 'disconnected',  // 🆕 ADD: Status in response
+      connection_status: 'disconnected',
       error: error.message,
       ...getPodInfo()
     });

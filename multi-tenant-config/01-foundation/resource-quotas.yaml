@@ -1,6 +1,4 @@
 # Multi-Tenant Resource Quotas Configuration
-# Created: Step 5 of multi-tenant implementation
-# Purpose: Resource governance and cost control per team
 
 # =============================================================================
 # FRONTEND TEAM RESOURCE QUOTA
@@ -24,27 +22,27 @@ metadata:
 spec:
   hard:
     # Compute Resources
-    requests.cpu: "4"           # 4 CPU cores requested
-    requests.memory: 8Gi        # 8GB RAM requested
-    limits.cpu: "8"             # Max 8 CPU cores burst
-    limits.memory: 16Gi         # Max 16GB RAM burst
+    requests.cpu: "4"        
+    requests.memory: 8Gi 
+    limits.cpu: "8"          
+    limits.memory: 16Gi   
     
     # Kubernetes Objects
-    pods: "50"                  # Max 50 pods
-    services: "10"              # Max 10 services
-    secrets: "20"               # Max 20 secrets
-    configmaps: "20"            # Max 20 configmaps
+    pods: "50"      
+    services: "10"  
+    secrets: "20"   
+    configmaps: "20"
     
     # Storage
-    requests.storage: 100Gi     # Max 100GB storage
-    persistentvolumeclaims: "10" # Max 10 PVCs
+    requests.storage: 100Gi     
+    persistentvolumeclaims: "10"
     
-    # Networking (frontend needs external access)
-    services.nodeports: "2"     # Max 2 NodePort services
-    services.loadbalancers: "1" # Max 1 LoadBalancer
+    # Networking
+    services.nodeports: "2"     
+    services.loadbalancers: "1" 
 
 ---
-# LimitRange for default pod limits (frontend team)
+# LimitRange
 apiVersion: v1
 kind: LimitRange
 metadata:
@@ -59,16 +57,16 @@ metadata:
     created-by: "multi-tenant-setup"
 spec:
   limits:
-  # Combined default and max limits for containers
+  
   - default:
-      cpu: 200m              # Default 0.2 CPU
-      memory: 256Mi          # Default 256MB RAM
+      cpu: 200m              
+      memory: 256Mi          
     defaultRequest:
-      cpu: 100m              # Default request 0.1 CPU
-      memory: 128Mi          # Default request 128MB RAM
+      cpu: 100m              
+      memory: 128Mi          
     max:
-      cpu: "2"               # Max 2 CPU per container
-      memory: 4Gi            # Max 4GB per container
+      cpu: "2"               
+      memory: 4Gi            
     type: Container
 
 # =============================================================================
@@ -92,28 +90,27 @@ metadata:
     created-by: "multi-tenant-setup"
 spec:
   hard:
-    # Backend needs more resources for databases and APIs
-    requests.cpu: "6"           # 6 CPU cores requested
-    requests.memory: 12Gi       # 12GB RAM requested  
-    limits.cpu: "12"            # Max 12 CPU cores
-    limits.memory: 24Gi         # Max 24GB RAM
+    # Compute Resources
+    requests.cpu: "6"           
+    requests.memory: 12Gi       
+    limits.cpu: "12"            
+    limits.memory: 24Gi         
     
-    # More objects for microservices architecture
-    pods: "75"                  # Max 75 pods
-    services: "15"              # Max 15 services
-    secrets: "30"               # Max 30 secrets (DB credentials, etc.)
-    configmaps: "30"            # Max 30 configmaps
+    pods: "75"                  
+    services: "15"              
+    secrets: "30"               
+    configmaps: "30"            
     
-    # More storage for databases
-    requests.storage: 200Gi     # Max 200GB storage
-    persistentvolumeclaims: "15" # Max 15 PVCs
+    # storage
+    requests.storage: 200Gi     
+    persistentvolumeclaims: "15"
     
-    # Networking (backend is internal, limited external access)
-    services.nodeports: "1"     # Max 1 NodePort (for debugging)
-    services.loadbalancers: "0" # No LoadBalancers (internal only)
+    # Networking
+    services.nodeports: "1"     
+    services.loadbalancers: "0" 
 
 ---
-# LimitRange for default pod limits (backend team)
+# LimitRange
 apiVersion: v1
 kind: LimitRange
 metadata:
@@ -128,16 +125,16 @@ metadata:
     created-by: "multi-tenant-setup"
 spec:
   limits:
-  # Combined default and max limits for containers (more generous for APIs/DBs)
+  
   - default:
-      cpu: 500m              # Default 0.5 CPU
-      memory: 512Mi          # Default 512MB RAM
+      cpu: 500m              
+      memory: 512Mi          
     defaultRequest:
-      cpu: 200m              # Default request 0.2 CPU
-      memory: 256Mi          # Default request 256MB RAM
+      cpu: 200m              
+      memory: 256Mi          
     max:
-      cpu: "4"               # Max 4 CPU per container (for databases)
-      memory: 8Gi            # Max 8GB per container
+      cpu: "4"               
+      memory: 8Gi            
     type: Container
 
 # =============================================================================
@@ -161,28 +158,28 @@ metadata:
     created-by: "multi-tenant-setup"
 spec:
   hard:
-    # Platform needs most resources for monitoring, GitOps, etc.
-    requests.cpu: "8"           # 8 CPU cores requested
-    requests.memory: 16Gi       # 16GB RAM requested
-    limits.cpu: "16"            # Max 16 CPU cores
-    limits.memory: 32Gi         # Max 32GB RAM
+    # Compute Resources
+    requests.cpu: "8"           
+    requests.memory: 16Gi       
+    limits.cpu: "16"            
+    limits.memory: 32Gi         
     
-    # Lots of objects for infrastructure components
-    pods: "100"                 # Max 100 pods
-    services: "25"              # Max 25 services
-    secrets: "50"               # Max 50 secrets
-    configmaps: "50"            # Max 50 configmaps
     
-    # Storage for monitoring data, logs, etc.
-    requests.storage: 500Gi     # Max 500GB storage
-    persistentvolumeclaims: "25" # Max 25 PVCs
+    pods: "100"                 
+    services: "25"              
+    secrets: "50"               
+    configmaps: "50"            
     
-    # Full networking access for platform services
-    services.nodeports: "10"    # Max 10 NodePort services
-    services.loadbalancers: "5" # Max 5 LoadBalancers
+    # Storage
+    requests.storage: 500Gi     
+    persistentvolumeclaims: "25"
+    
+    # Networking
+    services.nodeports: "10"    
+    services.loadbalancers: "5" 
 
 ---
-# LimitRange for platform team (more generous defaults)
+# LimitRange
 apiVersion: v1
 kind: LimitRange
 metadata:
@@ -197,14 +194,13 @@ metadata:
     created-by: "multi-tenant-setup"
 spec:
   limits:
-  # Combined default and max limits for infrastructure containers
   - default:
-      cpu: "1"               # Default 1 CPU (infrastructure needs more)
-      memory: 1Gi            # Default 1GB RAM
+      cpu: "1"               
+      memory: 1Gi            
     defaultRequest:
-      cpu: 500m              # Default request 0.5 CPU
-      memory: 512Mi          # Default request 512MB RAM
+      cpu: 500m              
+      memory: 512Mi          
     max:
-      cpu: "8"               # Max 8 CPU per container (for monitoring/GitOps)
-      memory: 16Gi           # Max 16GB per container
+      cpu: "8"               
+      memory: 16Gi           
     type: Container

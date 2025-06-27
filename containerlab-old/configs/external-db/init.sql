@@ -12,7 +12,7 @@ CREATE TABLE IF NOT EXISTS products (
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- External Products Catalog (Enterprise Suppliers)
+-- External Products Catalog
 INSERT INTO products (name, description, price, category, stock_quantity, supplier_code) VALUES
 ('iPhone 15 Pro Max (External)', 'Latest iPhone from Apple authorized distributor', 1199.99, 'Electronics', 50, 'APPLE-DIST-001'),
 ('MacBook Pro M3 (External)', '16-inch laptop from Apple enterprise program', 2499.99, 'Computers', 20, 'APPLE-ENT-004'),

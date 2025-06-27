@@ -82,7 +82,7 @@ topology:
         - ip addr add dev eth1 192.168.102.2/24 broadcast 192.168.102.255
         - route del default gw 172.20.20.1
         - route add default gw 192.168.102.1
-    # 🆕 AUTOMATED: PostgreSQL with Environment Variables
+    # 🆕 PostgreSQL
     external-db:
       image: postgres:13-alpine
       group: external
@@ -93,7 +93,6 @@ topology:
         POSTGRES_DB: techstore
         POSTGRES_USER: api
         POSTGRES_PASSWORD: secret123
-        # 🆕 AUTOMATIC: Allow all connections without manual config
         POSTGRES_HOST_AUTH_METHOD: trust
         POSTGRES_INITDB_ARGS: "--auth-host=trust"
       binds:

@@ -1,4 +1,4 @@
-# Prometheus Stack Configuration - FIXED VERSION
+# Prometheus Stack Configuration
 fullnameOverride: "prometheus"
 namespaceOverride: "team-platform"
 
@@ -44,8 +44,6 @@ grafana:
       labelValue: "1"
       folder: /tmp/dashboards
       searchNamespace: team-platform
-
-  # FIX: Removed custom datasource - let Helm create default ones
 
 alertmanager:
   alertmanagerSpec:

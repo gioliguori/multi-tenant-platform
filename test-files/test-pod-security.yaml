@@ -15,12 +15,6 @@ spec:
   containers:
   - name: nginx
     image: nginx:alpine
-    # PROBLEMA: Nessun securityContext definito
-    # Questo violerà i Pod Security Standards "restricted":
-    # - runAsNonRoot non impostato
-    # - allowPrivilegeEscalation non disabilitato
-    # - capabilities non droppate
-    # - seccompProfile non impostato
 
 ---
 # Test 2: Pod SICURO (dovrebbe essere PERMESSO)
@@ -58,11 +52,10 @@ spec:
       capabilities:                    # Richiesto da Pod Security Standards
         drop:
         - ALL
-      readOnlyRootFilesystem: true     # Best practice
+      readOnlyRootFilesystem: true    
     ports:
     - containerPort: 8080
       name: http
-    # Volume mounts per read-only filesystem
     volumeMounts:
     - name: tmp
       mountPath: /tmp

@@ -39,7 +39,7 @@ spec:
       capabilities:
         drop:
         - ALL
-      readOnlyRootFilesystem: false  # netshoot needs write access for tools
+      readOnlyRootFilesystem: false
     env:
     - name: TEST_TYPE
       value: "network-isolation"
@@ -92,7 +92,6 @@ spec:
       value: "team-backend"
 
 ---
-# Pod con label monitoring per test platform access
 apiVersion: v1
 kind: Pod
 metadata:
@@ -101,7 +100,7 @@ metadata:
   labels:
     app: monitoring-test
     team: frontend
-    monitoring: "enabled"  # Importante: consente accesso platform
+    monitoring: "enabled"
     test-type: platform-monitoring
   annotations:
     description: "Pod con monitoring=enabled per test platform access"

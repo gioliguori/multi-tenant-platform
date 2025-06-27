@@ -24,9 +24,9 @@ spec:
         team: frontend
         component: web-app
         tier: frontend
-        monitoring: "enabled"  # Allow platform team monitoring
+        monitoring: "enabled"
       annotations:
-        prometheus.io/scrape: "false"  # React dev server doesn't have metrics
+        prometheus.io/scrape: "false"
     spec:
       serviceAccountName: team-frontend-sa
       securityContext:
@@ -39,7 +39,7 @@ spec:
       containers:
       - name: react-store
         image: react-store:latest
-        imagePullPolicy: Never  # Local development with Kind
+        imagePullPolicy: Never
         ports:
         - containerPort: 3000
           name: http
@@ -48,7 +48,7 @@ spec:
         - name: NODE_ENV
           value: "development"
         - name: REACT_APP_API_URL
-          value: "http://localhost:3001"  # Port-forward backend access
+          value: "http://localhost:3001"
         - name: REACT_APP_TEAM
           value: "frontend"
         - name: REACT_APP_NAMESPACE
@@ -65,7 +65,7 @@ spec:
           capabilities:
             drop:
             - ALL
-          readOnlyRootFilesystem: false  # React dev server needs write access
+          readOnlyRootFilesystem: false
         livenessProbe:
           httpGet:
             path: /

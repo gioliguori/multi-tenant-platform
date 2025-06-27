@@ -21,4 +21,4 @@ spec:
   selector:
     app: react-store
     team: frontend
-  sessionAffinity: None  # Important: No sticky sessions for load balancing demo
+  sessionAffinity: None

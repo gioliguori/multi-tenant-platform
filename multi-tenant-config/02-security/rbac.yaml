@@ -1,9 +1,6 @@
 # Multi-Tenant RBAC Configuration
-# Created: Step 4 of multi-tenant implementation
-# Purpose: Role-based access control for team isolation
-
 # =============================================================================
-# FRONTEND TEAM RBAC (Namespace-scoped permissions)
+# FRONTEND TEAM RBAC
 # =============================================================================
 
 ---
@@ -20,7 +17,7 @@ metadata:
     description: "Full permissions for frontend team within their namespace"
     created-by: "multi-tenant-setup"
 rules:
-# Core Kubernetes resources
+# Kubernetes resources
 - apiGroups: [""]
   resources: ["pods", "services", "configmaps", "secrets", "persistentvolumeclaims", "endpoints"]
   verbs: ["get", "list", "create", "update", "patch", "delete"]
@@ -30,7 +27,7 @@ rules:
   resources: ["deployments", "replicasets", "statefulsets", "daemonsets"]
   verbs: ["get", "list", "create", "update", "patch", "delete"]
 
-# Networking (frontend needs ingress)
+# Networking
 - apiGroups: ["networking.k8s.io"]
   resources: ["ingresses", "networkpolicies"]
   verbs: ["get", "list", "create", "update", "patch", "delete"]
@@ -40,7 +37,7 @@ rules:
   resources: ["horizontalpodautoscalers"]
   verbs: ["get", "list", "create", "update", "patch", "delete"]
 
-# Read-only access to events and logs (troubleshooting)
+# Read-only access: events and logs
 - apiGroups: [""]
   resources: ["events"]
   verbs: ["get", "list"]
@@ -94,7 +91,7 @@ metadata:
     description: "Full permissions for backend team within their namespace"
     created-by: "multi-tenant-setup"
 rules:
-# Core Kubernetes resources (same as frontend)
+# Kubernetes resources
 - apiGroups: [""]
   resources: ["pods", "services", "configmaps", "secrets", "persistentvolumeclaims", "endpoints"]
   verbs: ["get", "list", "create", "update", "patch", "delete"]
@@ -104,12 +101,12 @@ rules:
   resources: ["deployments", "replicasets", "statefulsets", "daemonsets"]
   verbs: ["get", "list", "create", "update", "patch", "delete"]
 
-# Backend-specific: Jobs and CronJobs for data processing
+# Backend: data processing
 - apiGroups: ["batch"]
   resources: ["jobs", "cronjobs"]
   verbs: ["get", "list", "create", "update", "patch", "delete"]
 
-# Network policies (backend doesn't need ingress, only internal networking)
+# Network policies
 - apiGroups: ["networking.k8s.io"]
   resources: ["networkpolicies"]
   verbs: ["get", "list", "create", "update", "patch", "delete"]
@@ -119,7 +116,7 @@ rules:
   resources: ["horizontalpodautoscalers"]
   verbs: ["get", "list", "create", "update", "patch", "delete"]
 
-# Read-only access to events and logs
+# Read-only access: events and logs
 - apiGroups: [""]
   resources: ["events"]
   verbs: ["get", "list"]
@@ -173,12 +170,10 @@ metadata:
     created-by: "multi-tenant-setup"
     privilege-level: "cluster-admin"
 rules:
-# Full cluster access for platform operations (GitOps, monitoring, etc.)
 - apiGroups: ["*"]
   resources: ["*"]
   verbs: ["*"]
 
-# Access to non-resource URLs (health checks, metrics endpoints)
 - nonResourceURLs: ["*"]
   verbs: ["*"]
 

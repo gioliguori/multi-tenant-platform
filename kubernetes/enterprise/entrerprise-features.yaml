@@ -1,9 +1,6 @@
-# ============================================================================= 
-# ENTERPRISE FEATURES - HPA, PDB, INGRESS
-# Integration with existing multi-tenant security
-# =============================================================================
+# ENTERPRISE FEATURES - HPA, PDB, INGRESS (niente ingress alla fine)
 
-# Frontend HPA - Auto-scaling for load demos
+# Frontend HPA
 ---
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
@@ -51,7 +48,7 @@ spec:
         value: 10
         periodSeconds: 60
 
-# Backend HPA - Auto-scaling for API
+# Backend HPA
 ---
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
@@ -86,11 +83,7 @@ spec:
         type: Utilization
         averageUtilization: 70
 
-# ============================================================================= 
-# POD DISRUPTION BUDGETS - High Availability
-# ============================================================================= 
-
-# Frontend PDB - Ensure availability during maintenance
+# Frontend PDB
 ---
 apiVersion: policy/v1
 kind: PodDisruptionBudget
@@ -111,7 +104,7 @@ spec:
       app: react-store
       team: frontend
 
-# Backend PDB - Ensure API availability
+# Backend PDB
 ---
 apiVersion: policy/v1
 kind: PodDisruptionBudget
@@ -131,14 +124,3 @@ spec:
     matchLabels:
       app: users-api
       team: backend
-
-# ============================================================================= 
-# INGRESS - SKIPPED (Port-forward approach)
-# ============================================================================= 
-
-# NOTE: Ingress setup skipped for demo simplicity
-# Using port-forward instead:
-# kubectl port-forward -n team-frontend svc/react-store 3000:3000
-# kubectl port-forward -n team-backend svc/users-api 3001:3000
-
-# For production demos, add ingress controller setup here

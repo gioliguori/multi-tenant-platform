@@ -1,10 +1,4 @@
 # Monitoring RBAC Extensions
-# File: monitoring/rbac/monitoring-rbac.yaml
-# ONLY extends existing team-platform RBAC for specific monitoring needs
-
-# NOTE: team-platform-sa already has ClusterRole "team-platform-cluster-role" 
-# with full permissions ("*" on "*"). We only need specific extensions for
-# Prometheus Operator CRDs that might not be covered.
 
 ---
 # Additional ClusterRole ONLY for Prometheus Operator CRDs
@@ -16,7 +10,7 @@ metadata:
     app.kubernetes.io/part-of: multi-tenant-platform
     component: monitoring-extension
 rules:
-# Prometheus Operator CRDs (only if not already covered by existing "*" permissions)
+# Prometheus Operator CRDs
 - apiGroups: ["monitoring.coreos.com"]
   resources:
     - servicemonitors
@@ -27,15 +21,12 @@ rules:
     - thanosrulers
   verbs: ["*"]
 
-# Additional aggregated cluster roles for discovery
 - apiGroups: ["apiregistration.k8s.io"]
   resources:
     - apiservices
   verbs: ["get", "list", "watch"]
 
 ---
-# Bind ONLY the extension to existing platform ServiceAccount
-# (team-platform-sa already has cluster-admin via team-platform-cluster-role)
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
@@ -53,7 +44,6 @@ subjects:
   namespace: team-platform
 
 ---
-# Verification ConfigMap (for troubleshooting)
 apiVersion: v1
 kind: ConfigMap
 metadata:

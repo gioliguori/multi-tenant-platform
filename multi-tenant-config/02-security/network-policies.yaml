@@ -1,7 +1,4 @@
 # Network Policies per Isolamento Multi-Tenant
-# Created: Step 6 of multi-tenant implementation  
-# Purpose: Traffic-level isolation between teams with selective platform access
-# Updated: External database connectivity for team-backend
 
 # =============================================================================
 # DEFAULT DENY ALL POLICIES (Security by Default)
@@ -23,7 +20,7 @@ metadata:
     description: "Default deny all ingress and egress traffic for security"
     created-by: "multi-tenant-setup"
 spec:
-  podSelector: {}  # Applies to all pods in namespace
+  podSelector: {}  # all pods
   policyTypes:
   - Ingress
   - Egress
@@ -49,14 +46,13 @@ spec:
   - Ingress
   - Egress
 
-# Platform Namespace: No restrictions (needs full access for monitoring/GitOps)
-# Note: team-platform deliberately has no default deny policy
+# Platform Namespace: No restrictions
 
 # =============================================================================
-# ALLOW INTRA-NAMESPACE COMMUNICATION
+# INTRA-NAMESPACE COMMUNICATION
 # =============================================================================
 
-# Frontend: Allow pods within same namespace to communicate
+# Frontend: same namespace communication
 ---
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
@@ -86,7 +82,7 @@ spec:
         matchLabels:
           team: frontend
 
-# Backend: Allow pods within same namespace to communicate
+# Backend: same namespace communication
 ---
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
@@ -117,10 +113,10 @@ spec:
           team: backend
 
 # =============================================================================
-# DNS RESOLUTION (Critical for Service Discovery)
+# DNS RESOLUTION
 # =============================================================================
 
-# Frontend: Allow DNS queries to kube-system
+# Frontend: DNS queries
 ---
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
@@ -148,7 +144,6 @@ spec:
       port: 53
     - protocol: TCP
       port: 53
-  # Also allow DNS to CoreDNS pods directly
   - to: []
     ports:
     - protocol: UDP
@@ -156,7 +151,7 @@ spec:
     - protocol: TCP
       port: 53
 
-# Backend: Allow DNS queries
+# Backend: DNS queries
 ---
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
@@ -192,10 +187,10 @@ spec:
       port: 53
 
 # =============================================================================
-# 🆕 EXTERNAL DATABASE ACCESS (team-backend only)
+# EXTERNAL DATABASE
 # =============================================================================
 
-# Allow team-backend to access external PostgreSQL database
+# Backend
 ---
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
@@ -217,16 +212,14 @@ spec:
   policyTypes:
   - Egress
   egress:
-  # Allow access to external database (ContainerLab management network)
   - to: []
     ports:
     - protocol: TCP
-      port: 5432  # PostgreSQL port
-  # Allow all other egress for external integrations
+      port: 5432
   - to: []
 
 # =============================================================================
-# PLATFORM TEAM MONITORING ACCESS
+# PLATFORM TEAM MONITORING
 # =============================================================================
 
 # Allow Platform team to monitor Frontend namespace
@@ -246,7 +239,7 @@ metadata:
 spec:
   podSelector:
     matchLabels:
-      monitoring: "enabled"  # Only pods with this label can be monitored
+      monitoring: "enabled"
   policyTypes:
   - Ingress
   ingress:
@@ -299,46 +292,6 @@ spec:
     - protocol: TCP
       port: 3000
 
-# =============================================================================
-# CONTROLLED CROSS-TEAM COMMUNICATION (Optional)
-# =============================================================================
-
-# Allow Frontend to call Backend APIs (controlled)
-# NOTE: This is commented out by default for maximum security
-# Uncomment if you need frontend → backend communication
-
-# ---
-# apiVersion: networking.k8s.io/v1
-# kind: NetworkPolicy
-# metadata:
-#   name: allow-frontend-to-backend-api
-#   namespace: team-backend
-#   labels:
-#     team: backend
-#     component: network-security
-#     policy-type: controlled-cross-team
-# spec:
-#   podSelector:
-#     matchLabels:
-#       component: api  # Only API pods, not databases
-#       exposure: frontend  # Only pods marked for frontend access
-#   policyTypes:
-#   - Ingress
-#   ingress:
-#   - from:
-#     - namespaceSelector:
-#         matchLabels:
-#           team: frontend
-#     ports:
-#     - protocol: TCP
-#       port: 8080  # API port
-#     - protocol: TCP
-#       port: 3000  # Alternative API port
-
-# =============================================================================
-# EGRESS CONTROLS (Internet Access)
-# =============================================================================
-
 # Frontend: Allow controlled internet access
 ---
 apiVersion: networking.k8s.io/v1
@@ -358,12 +311,12 @@ spec:
   policyTypes:
   - Egress
   egress:
-  # Allow HTTPS for external APIs, CDNs, package registries
+  # Allow HTTPS
   - to: []
     ports:
     - protocol: TCP
       port: 443
-  # Allow HTTP for package downloads during builds (if needed)
+  # Allow HTTP
   - to: []
     ports:
     - protocol: TCP
@@ -388,7 +341,7 @@ spec:
   policyTypes:
   - Egress
   egress:
-  # Only HTTPS for security (no HTTP)
+  # Only HTTPS
   - to: []
     ports:
     - protocol: TCP
@@ -398,7 +351,7 @@ spec:
 # KUBERNETES API ACCESS
 # =============================================================================
 
-# Allow access to Kubernetes API server (required for some workloads)
+# Allow access to Kubernetes API server
 ---
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
@@ -417,13 +370,12 @@ spec:
   policyTypes:
   - Egress
   egress:
-  # Allow access to Kubernetes API server
   - to: []
     ports:
     - protocol: TCP
-      port: 6443   # Standard Kubernetes API port
+      port: 6443
     - protocol: TCP
-      port: 443    # Alternative API port
+      port: 443
 
 ---
 apiVersion: networking.k8s.io/v1

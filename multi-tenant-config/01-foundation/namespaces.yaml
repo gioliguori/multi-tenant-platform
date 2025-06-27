@@ -1,6 +1,4 @@
 # Multi-Tenant Namespaces Configuration
-# Created: Step 2 of multi-tenant implementation
-# Purpose: Isolated namespaces for each team with security labels
 
 ---
 apiVersion: v1
@@ -8,17 +6,17 @@ kind: Namespace
 metadata:
   name: team-frontend
   labels:
-    # Team identification
+    # Team
     team: frontend
     purpose: application
     environment: development
     
-    # Pod Security Standards (Restricted for application teams)
+    # Pod Security Standards
     pod-security.kubernetes.io/enforce: restricted
     pod-security.kubernetes.io/audit: restricted
     pod-security.kubernetes.io/warn: restricted
     
-    # Additional labels for management
+    # labels
     cost-center: engineering
     compliance: standard
     
@@ -34,17 +32,17 @@ kind: Namespace
 metadata:
   name: team-backend
   labels:
-    # Team identification
+    # Team
     team: backend
     purpose: application
     environment: development
     
-    # Pod Security Standards (Restricted for application teams)
+    # Pod Security Standards
     pod-security.kubernetes.io/enforce: restricted
     pod-security.kubernetes.io/audit: restricted
     pod-security.kubernetes.io/warn: restricted
     
-    # Additional labels for management
+    # labels
     cost-center: engineering
     compliance: standard
     
@@ -60,17 +58,17 @@ kind: Namespace
 metadata:
   name: team-platform
   labels:
-    # Team identification
+    # Team
     team: platform
     purpose: infrastructure
     environment: shared
     
-    # Pod Security Standards (Privileged for platform operations)
+    # Pod Security Standards
     pod-security.kubernetes.io/enforce: privileged
     pod-security.kubernetes.io/audit: privileged
     pod-security.kubernetes.io/warn: privileged
     
-    # Additional labels for management
+    # labels
     cost-center: platform
     compliance: elevated
     
