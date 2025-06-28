@@ -1,6 +1,10 @@
-# ENTERPRISE FEATURES - HPA, PDB, INGRESS (niente ingress alla fine)
+# Frontend Auto-scaling and High Availability
+# File: kubernetes/04-scaling/frontend-scaling.yaml
 
-# Frontend HPA
+# =============================================================================
+# HORIZONTAL POD AUTOSCALER
+# =============================================================================
+
 ---
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
@@ -11,9 +15,11 @@ metadata:
     app: react-store
     team: frontend
     component: autoscaling
+    tier: frontend
   annotations:
     description: "Auto-scaling for React store demo"
     business-value: "Automatic scaling during load tests"
+    created-by: "multi-tenant-setup"
 spec:
   scaleTargetRef:
     apiVersion: apps/v1
@@ -48,42 +54,10 @@ spec:
         value: 10
         periodSeconds: 60
 
-# Backend HPA
----
-apiVersion: autoscaling/v2
-kind: HorizontalPodAutoscaler
-metadata:
-  name: users-api-hpa
-  namespace: team-backend
-  labels:
-    app: users-api
-    team: backend
-    component: autoscaling
-  annotations:
-    description: "Auto-scaling for users API"
-    business-value: "Automatic scaling based on API load"
-spec:
-  scaleTargetRef:
-    apiVersion: apps/v1
-    kind: Deployment
-    name: users-api
-  minReplicas: 2
-  maxReplicas: 4
-  metrics:
-  - type: Resource
-    resource:
-      name: cpu
-      target:
-        type: Utilization
-        averageUtilization: 60
-  - type: Resource
-    resource:
-      name: memory
-      target:
-        type: Utilization
-        averageUtilization: 70
+# =============================================================================
+# POD DISRUPTION BUDGET
+# =============================================================================
 
-# Frontend PDB
 ---
 apiVersion: policy/v1
 kind: PodDisruptionBudget
@@ -94,33 +68,14 @@ metadata:
     app: react-store
     team: frontend
     component: availability
+    tier: frontend
   annotations:
     description: "Ensure frontend availability during node maintenance"
     business-value: "Zero downtime during infrastructure changes"
+    created-by: "multi-tenant-setup"
 spec:
   minAvailable: 1
   selector:
     matchLabels:
       app: react-store
       team: frontend
-
-# Backend PDB
----
-apiVersion: policy/v1
-kind: PodDisruptionBudget
-metadata:
-  name: users-api-pdb
-  namespace: team-backend
-  labels:
-    app: users-api
-    team: backend
-    component: availability
-  annotations:
-    description: "Ensure backend API availability during maintenance"
-    business-value: "API always available during cluster operations"
-spec:
-  minAvailable: 1
-  selector:
-    matchLabels:
-      app: users-api
-      team: backend

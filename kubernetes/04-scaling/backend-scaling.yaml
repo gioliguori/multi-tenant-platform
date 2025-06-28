@@ -1,0 +1,81 @@
+# Backend Auto-scaling and High Availability
+# File: kubernetes/04-scaling/backend-scaling.yaml
+
+# =============================================================================
+# HORIZONTAL POD AUTOSCALER
+# =============================================================================
+
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: users-api-hpa
+  namespace: team-backend
+  labels:
+    app: users-api
+    team: backend
+    component: autoscaling
+    tier: backend
+  annotations:
+    description: "Auto-scaling for users API"
+    business-value: "Automatic scaling based on API load"
+    created-by: "multi-tenant-setup"
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: users-api
+  minReplicas: 2
+  maxReplicas: 4
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 60
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 70
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: 60
+      policies:
+      - type: Pods
+        value: 2
+        periodSeconds: 60
+    scaleDown:
+      stabilizationWindowSeconds: 300
+      policies:
+      - type: Pods
+        value: 1
+        periodSeconds: 60
+
+# =============================================================================
+# POD DISRUPTION BUDGET
+# =============================================================================
+
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: users-api-pdb
+  namespace: team-backend
+  labels:
+    app: users-api
+    team: backend
+    component: availability
+    tier: backend
+  annotations:
+    description: "Ensure backend API availability during maintenance"
+    business-value: "API always available during cluster operations"
+    created-by: "multi-tenant-setup"
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: users-api
+      team: backend

@@ -1,0 +1,192 @@
+# PostgreSQL Deployment - Simple Version
+# File: kubernetes/03-workloads/backend/postgres-deployment.yaml
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: postgresql-secret
+  namespace: team-backend
+  labels:
+    app: postgresql
+    team: backend
+    component: database
+type: Opaque
+data:
+  # postgres / secret123 (base64 encoded)
+  POSTGRES_USER: cG9zdGdyZXM=
+  POSTGRES_PASSWORD: c2VjcmV0MTIz
+  POSTGRES_DB: dGVjaHN0b3Jl
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgresql-init
+  namespace: team-backend
+  labels:
+    app: postgresql
+    team: backend
+    component: database
+data:
+  init.sql: |
+    -- Create products table
+    CREATE TABLE IF NOT EXISTS products (
+      id SERIAL PRIMARY KEY,
+      name VARCHAR(255) NOT NULL,
+      description TEXT,
+      price DECIMAL(10,2) NOT NULL,
+      category VARCHAR(100),
+      stock_quantity INTEGER DEFAULT 100,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+
+    -- Sample products for demo
+    INSERT INTO products (name, description, price, category, stock_quantity) VALUES
+    ('iPhone 15 Pro Max', 'Latest iPhone with A17 Pro chip and titanium design', 1199.99, 'Electronics', 50),
+    ('MacBook Pro M3', '16-inch laptop with M3 chip for professional workflows', 2499.99, 'Computers', 20),
+    ('AirPods Max', 'Over-ear headphones with active noise cancellation', 549.99, 'Audio', 40),
+    ('Sony WH-1000XM5', 'Industry-leading noise canceling wireless headphones', 399.99, 'Audio', 35),
+    ('iPad Pro 12.9"', 'Professional tablet with M2 chip and Liquid Retina display', 1099.99, 'Tablets', 22),
+    ('Microsoft Surface Pro 9', 'Versatile 2-in-1 laptop with Windows 11', 1299.99, 'Tablets', 15),
+    ('Samsung Galaxy S24 Ultra', 'Premium Android phone with S Pen', 1299.99, 'Electronics', 30),
+    ('Dell XPS 13', 'Ultra-portable laptop with Intel Core i7', 1199.99, 'Computers', 25),
+    ('Nintendo Switch OLED', 'Gaming console with vibrant OLED screen', 349.99, 'Gaming', 60),
+    ('PlayStation 5', 'Next-generation gaming console', 499.99, 'Gaming', 15),
+    ('Xbox Series X', 'Most powerful Xbox console ever', 499.99, 'Gaming', 18),
+    ('Apple Watch Series 9', 'Advanced health and fitness tracking', 399.99, 'Wearables', 45);
+
+    -- Performance indexes
+    CREATE INDEX IF NOT EXISTS idx_products_category ON products(category);
+    CREATE INDEX IF NOT EXISTS idx_products_price ON products(price);
+    CREATE INDEX IF NOT EXISTS idx_products_stock ON products(stock_quantity);
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgresql
+  namespace: team-backend
+  labels:
+    app: postgresql
+    team: backend
+    component: database
+    tier: database
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgresql
+      team: backend
+  template:
+    metadata:
+      labels:
+        app: postgresql
+        team: backend
+        component: database
+        tier: database
+        monitoring: "enabled"
+    spec:
+      serviceAccountName: team-backend-sa
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 999  # postgres user
+        runAsGroup: 999
+        fsGroup: 999
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+      - name: postgresql
+        image: postgres:13-alpine
+        ports:
+        - containerPort: 5432
+          name: postgres
+        env:
+        - name: POSTGRES_USER
+          valueFrom:
+            secretKeyRef:
+              name: postgresql-secret
+              key: POSTGRES_USER
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: postgresql-secret
+              key: POSTGRES_PASSWORD
+        - name: POSTGRES_DB
+          valueFrom:
+            secretKeyRef:
+              name: postgresql-secret
+              key: POSTGRES_DB
+        - name: PGDATA
+          value: /var/lib/postgresql/data/pgdata
+        resources:
+          requests:
+            cpu: 200m
+            memory: 256Mi
+          limits:
+            cpu: 1000m
+            memory: 1Gi
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          readOnlyRootFilesystem: false  # PostgreSQL needs write access
+        volumeMounts:
+        - name: postgres-data
+          mountPath: /var/lib/postgresql/data
+        - name: postgres-init
+          mountPath: /docker-entrypoint-initdb.d
+          readOnly: true
+        livenessProbe:
+          exec:
+            command:
+            - /bin/sh
+            - -c
+            - pg_isready -U $POSTGRES_USER -d $POSTGRES_DB
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          exec:
+            command:
+            - /bin/sh
+            - -c
+            - pg_isready -U $POSTGRES_USER -d $POSTGRES_DB
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 3
+          successThreshold: 1
+          failureThreshold: 3
+      volumes:
+      - name: postgres-data
+        emptyDir: {}  # For demo - in production use PVC
+      - name: postgres-init
+        configMap:
+          name: postgresql-init
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 30
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgresql
+  namespace: team-backend
+  labels:
+    app: postgresql
+    team: backend
+    component: database
+    tier: database
+spec:
+  type: ClusterIP
+  ports:
+  - port: 5432
+    targetPort: 5432
+    protocol: TCP
+    name: postgres
+  selector:
+    app: postgresql
+    team: backend

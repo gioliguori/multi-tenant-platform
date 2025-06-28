@@ -1,33 +1,61 @@
 import React, { useState, useEffect } from 'react';
 
 function App() {
-  const [internalProducts, setInternalProducts] = useState([]);
-  const [externalProducts, setExternalProducts] = useState([]);
+  const [products, setProducts] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [selectedCategory, setSelectedCategory] = useState('all');
   const [serverInfo, setServerInfo] = useState(null);
+  const [dbInfo, setDbInfo] = useState(null);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    loadInternalProducts();
-    loadExternalProducts();
+    loadProducts();
+    loadCategories();
+    loadDbInfo();
   }, []);
 
-  const loadInternalProducts = async () => {
+  const loadProducts = async () => {
     try {
       const response = await fetch('http://localhost:3001/api/products');
       const data = await response.json();
-      setInternalProducts(data.products || []);
+      setProducts(data.products || []);
     } catch (error) {
-      console.error('Error loading internal products:', error);
+      console.error('Error loading products:', error);
     }
   };
 
-  const loadExternalProducts = async () => {
+  const loadCategories = async () => {
     try {
-      const response = await fetch('http://localhost:3001/api/products/external');
+      const response = await fetch('http://localhost:3001/api/categories');
       const data = await response.json();
-      setExternalProducts(data.products || []);
+      setCategories(data.categories || []);
     } catch (error) {
-      console.error('Error loading external products:', error);
+      console.error('Error loading categories:', error);
+    }
+  };
+
+  const loadDbInfo = async () => {
+    try {
+      const response = await fetch('http://localhost:3001/api/db-test');
+      const data = await response.json();
+      setDbInfo(data);
+    } catch (error) {
+      console.error('Error loading DB info:', error);
+    }
+  };
+
+  const loadProductsByCategory = async (category) => {
+    try {
+      setSelectedCategory(category);
+      if (category === 'all') {
+        loadProducts();
+      } else {
+        const response = await fetch(`http://localhost:3001/api/products/category/${category}`);
+        const data = await response.json();
+        setProducts(data.products || []);
+      }
+    } catch (error) {
+      console.error('Error loading products by category:', error);
     }
   };
 
@@ -44,93 +72,149 @@ function App() {
     setLoading(false);
   };
 
+  const getCategoryIcon = (category) => {
+    const icons = {
+      'Electronics': '📱',
+      'Computers': '💻',
+      'Audio': '🎧',
+      'Tablets': '📟',
+      'Gaming': '🎮',
+      'Wearables': '⌚'
+    };
+    return icons[category] || '📦';
+  };
+
   return (
-    <div style={{ maxWidth: '1000px', margin: '0 auto', padding: '20px', fontFamily: 'Arial, sans-serif' }}>
+    <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '20px', fontFamily: 'Arial, sans-serif' }}>
       
       {/* Header */}
       <div style={{ textAlign: 'center', marginBottom: '40px' }}>
-        <h1 style={{ color: '#333', fontSize: '2.2rem', marginBottom: '10px' }}>
+        <h1 style={{ color: '#333', fontSize: '2.5rem', marginBottom: '10px' }}>
           🛍️ TechStore
         </h1>
-        <p style={{ color: '#666', fontSize: '1.1rem' }}>
-          Multi-Tenant E-commerce Platform Demo
+        <p style={{ color: '#666', fontSize: '1.2rem', marginBottom: '10px' }}>
+          Multi-Tenant Kubernetes Platform Demo
+        </p>
+        <p style={{ color: '#888', fontSize: '1rem' }}>
+          🏗️ <strong>Architecture:</strong> React → Kubernetes Service → PostgreSQL Pod
         </p>
       </div>
 
-      {/* Store Sections */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '30px', marginBottom: '40px' }}>
-        
-        {/* Internal Products */}
-        <div>
-          <h2 style={{ color: '#444', borderBottom: '2px solid #007bff', paddingBottom: '10px' }}>
-            📦 Store Catalog
-          </h2>
-          <p style={{ color: '#666', marginBottom: '20px' }}>
-            Products from our main inventory
-          </p>
-          
-          <div style={{ display: 'grid', gap: '15px' }}>
-            {internalProducts.map(product => (
-              <div key={product.id} style={{
-                border: '1px solid #ddd',
-                borderRadius: '8px',
-                padding: '15px',
-                backgroundColor: '#f8f9fa'
-              }}>
-                <h3 style={{ margin: '0 0 8px 0', color: '#333', fontSize: '1.1rem' }}>
-                  {product.name}
-                </h3>
-                <p style={{ margin: '0 0 8px 0', color: '#28a745', fontWeight: 'bold' }}>
-                  ${product.price}
-                </p>
-                <p style={{ margin: 0, color: '#666', fontSize: '0.9rem' }}>
-                  {product.description}
-                </p>
-              </div>
-            ))}
-          </div>
+      {/* Category Filter */}
+      <div style={{ marginBottom: '30px', textAlign: 'center' }}>
+        <h3 style={{ color: '#444', marginBottom: '15px' }}>
+          🏷️ Filter by Category
+        </h3>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', justifyContent: 'center' }}>
+          <button
+            onClick={() => loadProductsByCategory('all')}
+            style={{
+              backgroundColor: selectedCategory === 'all' ? '#007bff' : '#f8f9fa',
+              color: selectedCategory === 'all' ? 'white' : '#333',
+              border: '1px solid #dee2e6',
+              padding: '8px 16px',
+              borderRadius: '20px',
+              cursor: 'pointer',
+              fontSize: '14px'
+            }}
+          >
+            📦 All Products
+          </button>
+          {categories.map(cat => (
+            <button
+              key={cat.category}
+              onClick={() => loadProductsByCategory(cat.category)}
+              style={{
+                backgroundColor: selectedCategory === cat.category ? '#28a745' : '#f8f9fa',
+                color: selectedCategory === cat.category ? 'white' : '#333',
+                border: '1px solid #dee2e6',
+                padding: '8px 16px',
+                borderRadius: '20px',
+                cursor: 'pointer',
+                fontSize: '14px'
+              }}
+            >
+              {getCategoryIcon(cat.category)} {cat.category} ({cat.product_count})
+            </button>
+          ))}
         </div>
+      </div>
 
-        {/* External Products */}
-        <div>
-          <h2 style={{ color: '#444', borderBottom: '2px solid #28a745', paddingBottom: '10px' }}>
-            🌐 Partner Catalog
-          </h2>
-          <p style={{ color: '#666', marginBottom: '20px' }}>
-            Products from external suppliers
-          </p>
-          
-          <div style={{ display: 'grid', gap: '15px' }}>
-            {externalProducts.map(product => (
-              <div key={product.id} style={{
-                border: '1px solid #ddd',
-                borderRadius: '8px',
-                padding: '15px',
-                backgroundColor: '#f0f8f0'
-              }}>
-                <h3 style={{ margin: '0 0 8px 0', color: '#333', fontSize: '1.1rem' }}>
-                  {product.name}
+      {/* Products Grid */}
+      <div style={{ marginBottom: '40px' }}>
+        <h2 style={{ color: '#444', borderBottom: '2px solid #007bff', paddingBottom: '10px', marginBottom: '20px' }}>
+          🛒 Product Catalog
+          {selectedCategory !== 'all' && (
+            <span style={{ color: '#666', fontSize: '1rem', fontWeight: 'normal' }}>
+              {' '} - {selectedCategory} Category
+            </span>
+          )}
+        </h2>
+        
+        <div style={{ 
+          display: 'grid', 
+          gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', 
+          gap: '20px' 
+        }}>
+          {products.map(product => (
+            <div key={product.id} style={{
+              border: '1px solid #ddd',
+              borderRadius: '12px',
+              padding: '20px',
+              backgroundColor: '#fff',
+              boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+              transition: 'transform 0.2s',
+              cursor: 'pointer'
+            }}
+            onMouseEnter={(e) => e.target.style.transform = 'translateY(-2px)'}
+            onMouseLeave={(e) => e.target.style.transform = 'translateY(0)'}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
+                <h3 style={{ margin: 0, color: '#333', fontSize: '1.1rem', flex: 1 }}>
+                  {getCategoryIcon(product.category)} {product.name}
                 </h3>
-                <p style={{ margin: '0 0 8px 0', color: '#28a745', fontWeight: 'bold' }}>
-                  ${product.price}
-                </p>
-                <p style={{ margin: '0 0 8px 0', color: '#666', fontSize: '0.9rem' }}>
-                  {product.description}
-                </p>
-                {product.category && (
-                  <span style={{
-                    backgroundColor: '#28a745',
-                    color: 'white',
-                    padding: '2px 6px',
-                    borderRadius: '4px',
-                    fontSize: '0.8rem'
-                  }}>
-                    {product.category}
-                  </span>
-                )}
+                <span style={{
+                  backgroundColor: '#007bff',
+                  color: 'white',
+                  padding: '4px 8px',
+                  borderRadius: '12px',
+                  fontSize: '0.75rem',
+                  marginLeft: '10px'
+                }}>
+                  {product.category}
+                </span>
               </div>
-            ))}
-          </div>
+              
+              <p style={{ margin: '0 0 10px 0', color: '#28a745', fontWeight: 'bold', fontSize: '1.2rem' }}>
+                ${product.price}
+              </p>
+              
+              <p style={{ margin: '0 0 10px 0', color: '#666', fontSize: '0.9rem', lineHeight: '1.4' }}>
+                {product.description}
+              </p>
+              
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '15px' }}>
+                <span style={{ 
+                  color: product.stock_quantity > 20 ? '#28a745' : product.stock_quantity > 5 ? '#ffc107' : '#dc3545',
+                  fontSize: '0.85rem',
+                  fontWeight: 'bold'
+                }}>
+                  📦 Stock: {product.stock_quantity}
+                </span>
+                <button style={{
+                  backgroundColor: '#28a745',
+                  color: 'white',
+                  border: 'none',
+                  padding: '6px 12px',
+                  borderRadius: '6px',
+                  fontSize: '0.85rem',
+                  cursor: 'pointer'
+                }}>
+                  Add to Cart
+                </button>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
 
@@ -138,15 +222,15 @@ function App() {
       <div style={{ 
         backgroundColor: '#f8f9fa', 
         border: '1px solid #dee2e6', 
-        borderRadius: '8px', 
+        borderRadius: '12px', 
         padding: '30px',
         textAlign: 'center'
       }}>
         <h2 style={{ color: '#444', marginBottom: '15px' }}>
-          ⚖️ Load Balancing Test
+          ⚖️ Kubernetes Load Balancing Test
         </h2>
         <p style={{ color: '#666', marginBottom: '20px' }}>
-          Click the button to see which backend server handles your request
+          Click the button to see which backend pod handles your request
         </p>
         
         <button 
@@ -157,7 +241,7 @@ function App() {
             color: 'white',
             border: 'none',
             padding: '12px 30px',
-            borderRadius: '6px',
+            borderRadius: '8px',
             fontSize: '16px',
             cursor: loading ? 'not-allowed' : 'pointer',
             marginBottom: '20px'
@@ -170,31 +254,26 @@ function App() {
           <div style={{
             backgroundColor: 'white',
             border: '1px solid #dee2e6',
-            borderRadius: '6px',
+            borderRadius: '8px',
             padding: '20px',
             textAlign: 'left'
           }}>
             <h4 style={{ margin: '0 0 15px 0', color: '#333' }}>
-              Current Server:
+              🖥️ Current Backend Server:
             </h4>
             {serverInfo.error ? (
               <p style={{ color: '#dc3545', margin: 0 }}>
                 {serverInfo.error}
               </p>
             ) : (
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-                <div>
-                  <strong>Pod Name:</strong> {serverInfo.hostname}
-                </div>
-                <div>
-                  <strong>Pod IP:</strong> {serverInfo.podIP}
-                </div>
-                <div>
-                  <strong>Node:</strong> {serverInfo.nodeName}
-                </div>
-                <div>
-                  <strong>Uptime:</strong> {serverInfo.uptime}s
-                </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', fontSize: '0.9rem' }}>
+                <div><strong>Pod Name:</strong> {serverInfo.hostname}</div>
+                <div><strong>Pod IP:</strong> {serverInfo.podIP}</div>
+                <div><strong>Kubernetes Node:</strong> {serverInfo.nodeName}</div>
+                <div><strong>Namespace:</strong> {serverInfo.namespace}</div>
+                <div><strong>Uptime:</strong> {serverInfo.uptime}s</div>
+                <div><strong>Architecture:</strong> {serverInfo.architecture}</div>
+                <div><strong>Load Balancer:</strong> {serverInfo.load_balancer}</div>
               </div>
             )}
           </div>
@@ -209,8 +288,13 @@ function App() {
         borderTop: '1px solid #dee2e6',
         paddingTop: '20px'
       }}>
-        <p style={{ margin: 0, fontSize: '0.9rem' }}>
-          <strong>Architecture:</strong> React Frontend → Kubernetes Service → Multiple Backend Pods → External Database
+        <p style={{ margin: '0 0 10px 0', fontSize: '0.9rem' }}>
+          <strong>🏗️ Multi-Tenant Kubernetes Architecture</strong>
+        </p>
+        <p style={{ margin: 0, fontSize: '0.8rem', color: '#888' }}>
+          React Frontend → Kubernetes Service → Backend Pods → PostgreSQL Pod
+          <br />
+          🔒 Network Policies • 📊 Resource Quotas • ⚖️ Load Balancing • 📈 Auto-scaling
         </p>
       </div>
     </div>

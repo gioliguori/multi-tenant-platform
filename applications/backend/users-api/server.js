@@ -6,28 +6,43 @@ const os = require('os');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// =============================================================================
 // PROMETHEUS METRICS SETUP
+// =============================================================================
+
 let metrics = {
   http_requests_total: 0,
-  external_db_queries_total: 0,
+  db_queries_total: 0,
   db_connections_total: 0,
   api_errors_total: 0,
   startup_time: Date.now(),
-  db_connection_status: 1
+  db_connection_status: 1  // 1 = connected, 0 = disconnected
 };
 
-// PostgreSQL
-const workingPool = new Pool({
-  host: '172.20.20.15',
+// PostgreSQL connection pool - Kubernetes service DNS
+const pool = new Pool({
+  host: 'postgresql.team-backend.svc.cluster.local',
   port: 5432,
   database: 'techstore',
-  user: 'api',
+  user: 'postgres',
   password: 'secret123',
-  max: 3,
+  max: 5,
   idleTimeoutMillis: 30000,
   connectionTimeoutMillis: 10000,
   ssl: false
 });
+
+// Test connection on startup
+pool.connect()
+  .then(client => {
+    console.log('✅ Connected to PostgreSQL in Kubernetes');
+    client.release();
+    metrics.db_connection_status = 1;
+  })
+  .catch(err => {
+    console.error('❌ Failed to connect to PostgreSQL:', err.message);
+    metrics.db_connection_status = 0;
+  });
 
 // Middleware
 app.use(cors());
@@ -47,6 +62,7 @@ const getPodInfo = () => {
     podIP: process.env.POD_IP || 'localhost',
     nodeName: process.env.NODE_NAME || os.hostname(),
     namespace: process.env.NAMESPACE || 'team-backend',
+    database: 'postgresql.team-backend.svc.cluster.local:5432',
     timestamp: new Date().toISOString()
   };
 };
@@ -58,9 +74,10 @@ const getPodInfo = () => {
 // ROOT
 app.get('/', (req, res) => {
   res.json({
-    service: 'TechStore API with Metrics',
+    service: 'TechStore API - Kubernetes Native',
     team: 'backend',
-    database: '172.20.20.15:5432',
+    database: 'postgresql.team-backend.svc.cluster.local:5432',
+    architecture: 'multi-tenant-kubernetes',
     metrics_endpoint: '/metrics',
     ...getPodInfo()
   });
@@ -71,62 +88,47 @@ app.get('/metrics', (req, res) => {
   const podInfo = getPodInfo();
   const uptime = Math.floor((Date.now() - metrics.startup_time) / 1000);
 
-  // NON INDENTARE ALTRIMENTI NON FUNZIONA PIU, LASCIA COSI
-  const prometheusMetrics = `# HELP http_requests_total Total HTTP requests
+  const prometheusMetrics = `
+# HELP http_requests_total Total HTTP requests
 # TYPE http_requests_total counter
-http_requests_total{namespace="team-backend",pod="${podInfo.hostname}"} ${metrics.http_requests_total}
+http_requests_total{namespace="team-backend",pod="${podInfo.hostname}",service="techstore-api"} ${metrics.http_requests_total}
 
-# HELP external_db_queries_total External database queries
-# TYPE external_db_queries_total counter
-external_db_queries_total{namespace="team-backend",pod="${podInfo.hostname}"} ${metrics.external_db_queries_total}
+# HELP db_queries_total Database queries
+# TYPE db_queries_total counter
+db_queries_total{namespace="team-backend",pod="${podInfo.hostname}",database="postgresql"} ${metrics.db_queries_total}
 
 # HELP db_connections_total Database connections
 # TYPE db_connections_total counter
-db_connections_total{namespace="team-backend",pod="${podInfo.hostname}"} ${metrics.db_connections_total}
+db_connections_total{namespace="team-backend",pod="${podInfo.hostname}",database="postgresql"} ${metrics.db_connections_total}
 
 # HELP api_errors_total API errors
 # TYPE api_errors_total counter
-api_errors_total{namespace="team-backend",pod="${podInfo.hostname}"} ${metrics.api_errors_total}
+api_errors_total{namespace="team-backend",pod="${podInfo.hostname}",service="techstore-api"} ${metrics.api_errors_total}
 
 # HELP db_connection_status Database connection status (1=connected, 0=disconnected)
 # TYPE db_connection_status gauge
-db_connection_status{namespace="team-backend",pod="${podInfo.hostname}",database="external-postgresql",host="172.20.20.15"} ${metrics.db_connection_status}
+db_connection_status{namespace="team-backend",pod="${podInfo.hostname}",database="postgresql",host="postgresql.team-backend.svc.cluster.local"} ${metrics.db_connection_status}
 
 # HELP app_uptime_seconds Application uptime
 # TYPE app_uptime_seconds gauge
-app_uptime_seconds{namespace="team-backend",pod="${podInfo.hostname}"} ${uptime}
+app_uptime_seconds{namespace="team-backend",pod="${podInfo.hostname}",service="techstore-api"} ${uptime}
 `;
 
   res.set('Content-Type', 'text/plain');
-  res.send(prometheusMetrics);
+  res.send(prometheusMetrics.trim());
 });
 
 // PRODUCTS API
-app.get('/api/products', (req, res) => {
-  const products = [
-    { id: 1, name: 'iPhone 15 Pro', price: 999 },
-    { id: 2, name: 'MacBook Air M3', price: 1499 },
-    { id: 3, name: 'AirPods Pro', price: 249 }
-  ];
-
-  res.json({
-    products,
-    metadata: { source: 'internal-catalog', ...getPodInfo() }
-  });
-});
-
-// EXTERNAL PRODUCTS API
-app.get('/api/products/external', async (req, res) => {
+app.get('/api/products', async (req, res) => {
   try {
-    metrics.external_db_queries_total++;
+    metrics.db_queries_total++;
     const startTime = Date.now();
     
-    const result = await workingPool.query(`
-      SELECT id, name, description, price, category
+    const result = await pool.query(`
+      SELECT id, name, description, price, category, stock_quantity
       FROM products 
-      WHERE external_source = true 
       ORDER BY category, name
-      LIMIT 10
+      LIMIT 20
     `);
     
     const duration = Date.now() - startTime;
@@ -135,7 +137,51 @@ app.get('/api/products/external', async (req, res) => {
     res.json({
       products: result.rows,
       metadata: {
-        source: 'external-database',
+        source: 'postgresql-kubernetes',
+        total_products: result.rows.length,
+        query_duration_ms: duration,
+        connection_status: 'connected',
+        ...getPodInfo()
+      }
+    });
+
+  } catch (error) {
+    metrics.api_errors_total++;
+    metrics.db_connection_status = 0;
+    
+    console.error('Database error:', error);
+    res.status(503).json({
+      error: 'Database connection failed',
+      message: error.message,
+      connection_status: 'disconnected',
+      ...getPodInfo()
+    });
+  }
+});
+
+// PRODUCTS BY CATEGORY
+app.get('/api/products/category/:category', async (req, res) => {
+  try {
+    metrics.db_queries_total++;
+    const { category } = req.params;
+    const startTime = Date.now();
+    
+    const result = await pool.query(`
+      SELECT id, name, description, price, category, stock_quantity
+      FROM products 
+      WHERE LOWER(category) = LOWER($1)
+      ORDER BY name
+    `, [category]);
+    
+    const duration = Date.now() - startTime;
+    metrics.db_connection_status = 1;
+
+    res.json({
+      products: result.rows,
+      metadata: {
+        source: 'postgresql-kubernetes',
+        category: category,
+        total_products: result.rows.length,
         query_duration_ms: duration,
         connection_status: 'connected',
         ...getPodInfo()
@@ -147,7 +193,47 @@ app.get('/api/products/external', async (req, res) => {
     metrics.db_connection_status = 0;
     
     res.status(503).json({
-      error: 'Database connection failed',
+      error: 'Database query failed',
+      message: error.message,
+      connection_status: 'disconnected',
+      ...getPodInfo()
+    });
+  }
+});
+
+// CATEGORIES
+app.get('/api/categories', async (req, res) => {
+  try {
+    metrics.db_queries_total++;
+    const startTime = Date.now();
+    
+    const result = await pool.query(`
+      SELECT category, COUNT(*) as product_count
+      FROM products 
+      GROUP BY category
+      ORDER BY category
+    `);
+    
+    const duration = Date.now() - startTime;
+    metrics.db_connection_status = 1;
+
+    res.json({
+      categories: result.rows,
+      metadata: {
+        source: 'postgresql-kubernetes',
+        total_categories: result.rows.length,
+        query_duration_ms: duration,
+        connection_status: 'connected',
+        ...getPodInfo()
+      }
+    });
+
+  } catch (error) {
+    metrics.api_errors_total++;
+    metrics.db_connection_status = 0;
+    
+    res.status(503).json({
+      error: 'Database query failed',
       message: error.message,
       connection_status: 'disconnected',
       ...getPodInfo()
@@ -159,8 +245,9 @@ app.get('/api/products/external', async (req, res) => {
 app.get('/api/db-test', async (req, res) => {
   try {
     metrics.db_connections_total++;
-    const client = await workingPool.connect();
-    const result = await client.query('SELECT version()');
+    const client = await pool.connect();
+    const result = await client.query('SELECT version(), current_database(), current_user');
+    const countResult = await client.query('SELECT COUNT(*) as total_products FROM products');
     client.release();
     
     metrics.db_connection_status = 1;
@@ -168,7 +255,12 @@ app.get('/api/db-test', async (req, res) => {
     res.json({
       status: 'success',
       connection_status: 'connected',
-      database_info: result.rows[0],
+      database_info: {
+        version: result.rows[0].version,
+        database: result.rows[0].current_database,
+        user: result.rows[0].current_user,
+        total_products: parseInt(countResult.rows[0].total_products)
+      },
       ...getPodInfo()
     });
     
@@ -189,7 +281,8 @@ app.get('/api/db-test', async (req, res) => {
 app.get('/api/health', (req, res) => {
   res.json({
     status: 'healthy',
-    service: 'techstore-api-with-metrics',
+    service: 'techstore-api-kubernetes',
+    database: 'postgresql.team-backend.svc.cluster.local',
     ...getPodInfo()
   });
 });
@@ -200,14 +293,17 @@ app.get('/api/server-info', (req, res) => {
   res.json({
     ...podInfo,
     message: `Request handled by ${podInfo.hostname}`,
-    uptime: Math.floor(process.uptime())
+    uptime: Math.floor(process.uptime()),
+    architecture: 'kubernetes-native',
+    load_balancer: 'kubernetes-service'
   });
 });
 
 // Start server
 app.listen(PORT, '0.0.0.0', () => {
-  console.log(`🚀 TechStore API with Metrics running on port ${PORT}`);
+  console.log(`🚀 TechStore API (Kubernetes Native) running on port ${PORT}`);
   console.log(`🎯 Metrics endpoint: http://localhost:${PORT}/metrics`);
   console.log(`🏷️  Pod: ${getPodInfo().hostname}`);
-  console.log(`🗄️  Database: 172.20.20.15:5432`);
+  console.log(`🗄️  Database: postgresql.team-backend.svc.cluster.local:5432`);
+  console.log(`🏗️  Architecture: Multi-tenant Kubernetes`);
 });
