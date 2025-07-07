@@ -1,10 +1,10 @@
-# Network Policies per Isolamento Multi-Tenant
+# Policy di Rete per Isolamento Multi-Tenant
 
 # =============================================================================
-# DEFAULT DENY ALL POLICIES (Security by Default)
+# POLICY DEFAULT DENY ALL
 # =============================================================================
 
-# Frontend Namespace: Default Deny All
+# Namespace Frontend: Blocca tutto di default
 ---
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
@@ -13,19 +13,13 @@ metadata:
   namespace: team-frontend
   labels:
     team: frontend
-    component: network-security
-    policy-type: default-deny
-    setup-step: "step-6"
-  annotations:
-    description: "Default deny all ingress and egress traffic for security"
-    created-by: "multi-tenant-setup"
 spec:
-  podSelector: {}  # all pods
+  podSelector: {}  # tutti i pod
   policyTypes:
   - Ingress
   - Egress
 
-# Backend Namespace: Default Deny All  
+# Namespace Backend: Blocca tutto di default  
 ---
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
@@ -34,25 +28,19 @@ metadata:
   namespace: team-backend
   labels:
     team: backend
-    component: network-security
-    policy-type: default-deny
-    setup-step: "step-6"
-  annotations:
-    description: "Default deny all ingress and egress traffic for security"
-    created-by: "multi-tenant-setup"
 spec:
   podSelector: {}
   policyTypes:
   - Ingress
   - Egress
 
-# Platform Namespace: No restrictions
+# Namespace Platform: Nessuna restrizione
 
 # =============================================================================
-# INTRA-NAMESPACE COMMUNICATION
+# COMUNICAZIONE INTRA-NAMESPACE
 # =============================================================================
 
-# Frontend: same namespace communication
+# Frontend: comunicazione stesso namespace
 ---
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
@@ -61,11 +49,6 @@ metadata:
   namespace: team-frontend
   labels:
     team: frontend
-    component: network-security
-    policy-type: intra-namespace-allow
-    setup-step: "step-6"
-  annotations:
-    description: "Allow pods within team-frontend to communicate with each other"
 spec:
   podSelector: {}
   policyTypes:
@@ -82,7 +65,7 @@ spec:
         matchLabels:
           team: frontend
 
-# Backend: same namespace communication
+# Backend: comunicazione stesso namespace
 ---
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
@@ -91,11 +74,6 @@ metadata:
   namespace: team-backend
   labels:
     team: backend
-    component: network-security
-    policy-type: intra-namespace-allow
-    setup-step: "step-6"
-  annotations:
-    description: "Allow pods within team-backend to communicate with each other"
 spec:
   podSelector: {}
   policyTypes:
@@ -113,10 +91,10 @@ spec:
           team: backend
 
 # =============================================================================
-# DNS RESOLUTION
+# RISOLUZIONE DNS
 # =============================================================================
 
-# Frontend: DNS queries
+# Frontend: query DNS
 ---
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
@@ -125,16 +103,12 @@ metadata:
   namespace: team-frontend
   labels:
     team: frontend
-    component: network-security
-    policy-type: dns-allow
-    setup-step: "step-6"
-  annotations:
-    description: "Allow DNS queries to kube-system for service discovery"
 spec:
   podSelector: {}
   policyTypes:
   - Egress
   egress:
+  # DNS di Kubernetes (CoreDNS in kube-system)
   - to:
     - namespaceSelector:
         matchLabels:
@@ -144,6 +118,7 @@ spec:
       port: 53
     - protocol: TCP
       port: 53
+  # DNS esterni (fallback)
   - to: []
     ports:
     - protocol: UDP
@@ -151,7 +126,7 @@ spec:
     - protocol: TCP
       port: 53
 
-# Backend: DNS queries
+# Backend: query DNS
 ---
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
@@ -160,11 +135,6 @@ metadata:
   namespace: team-backend
   labels:
     team: backend
-    component: network-security
-    policy-type: dns-allow
-    setup-step: "step-6"
-  annotations:
-    description: "Allow DNS queries to kube-system for service discovery"
 spec:
   podSelector: {}
   policyTypes:
@@ -187,42 +157,34 @@ spec:
       port: 53
 
 # =============================================================================
-# EXTERNAL DATABASE
+# ACCESSO DATABASE
 # =============================================================================
 
-# Backend
+# Backend: accesso PostgreSQL
 ---
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
-  name: allow-external-database
+  name: allow-database
   namespace: team-backend
   labels:
     team: backend
-    component: network-security
-    policy-type: external-database-access
-    setup-step: "step-6-external-db"
-  annotations:
-    description: "Allow backend pods to access external PostgreSQL database"
-    database-host: "172.20.20.15:5432"
-    network-path: "pod → management-network → containerlab → external-db"
-    created-by: "multi-tenant-setup-external-db"
 spec:
   podSelector: {}
   policyTypes:
   - Egress
   egress:
+  # PostgreSQL
   - to: []
     ports:
     - protocol: TCP
       port: 5432
-  - to: []
 
 # =============================================================================
-# PLATFORM TEAM MONITORING
+# MONITORING DEL PLATFORM TEAM
 # =============================================================================
 
-# Allow Platform team to monitor Frontend namespace
+# Frontend: permetti monitoring dal platform team
 ---
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
@@ -231,11 +193,6 @@ metadata:
   namespace: team-frontend
   labels:
     team: frontend
-    component: network-security
-    policy-type: platform-monitoring
-    setup-step: "step-6"
-  annotations:
-    description: "Allow platform team to monitor frontend namespace for observability"
 spec:
   podSelector:
     matchLabels:
@@ -246,18 +203,16 @@ spec:
   - from:
     - namespaceSelector:
         matchLabels:
-          team: platform
+          team: platform  # Solo dal namespace platform
     ports:
+    - protocol: TCP # Grafana port
+      port: 3000    
     - protocol: TCP
       port: 8080    # Common metrics port
     - protocol: TCP
-      port: 9090    # Prometheus metrics port
-    - protocol: TCP
-      port: 9091    # Pushgateway port
-    - protocol: TCP
-      port: 3000    # Grafana port
+      port: 9090    # Prometheus metrics
 
-# Allow Platform team to monitor Backend namespace
+# Backend: permetti monitoring dal platform team
 ---
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
@@ -266,11 +221,6 @@ metadata:
   namespace: team-backend
   labels:
     team: backend
-    component: network-security
-    policy-type: platform-monitoring
-    setup-step: "step-6"
-  annotations:
-    description: "Allow platform team to monitor backend namespace for observability"
 spec:
   podSelector:
     matchLabels:
@@ -281,18 +231,20 @@ spec:
   - from:
     - namespaceSelector:
         matchLabels:
-          team: platform
+          team: platform  # Solo dal namespace platform
     ports:
     - protocol: TCP
-      port: 8080
+      port: 3000    # Porta API backend
     - protocol: TCP
-      port: 9090
+      port: 8080    # Porta metriche
     - protocol: TCP
-      port: 9091
-    - protocol: TCP
-      port: 3000
+      port: 9090    # Prometheus metrics
 
-# Frontend: Allow controlled internet access
+# =============================================================================
+# ACCESSO INTERNET
+# =============================================================================
+
+# Frontend: accesso internet controllato
 ---
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
@@ -301,28 +253,19 @@ metadata:
   namespace: team-frontend
   labels:
     team: frontend
-    component: network-security
-    policy-type: internet-egress
-    setup-step: "step-6"
-  annotations:
-    description: "Allow controlled internet access for frontend applications"
 spec:
   podSelector: {}
   policyTypes:
   - Egress
   egress:
-  # Allow HTTPS
   - to: []
     ports:
     - protocol: TCP
-      port: 443
-  # Allow HTTP
-  - to: []
-    ports:
+      port: 443  # HTTPS
     - protocol: TCP
-      port: 80
+      port: 80   # HTTP
 
-# Backend: More restrictive internet access
+# Backend: accesso internet restrittivo
 ---
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
@@ -331,27 +274,21 @@ metadata:
   namespace: team-backend
   labels:
     team: backend
-    component: network-security
-    policy-type: internet-egress
-    setup-step: "step-6"
-  annotations:
-    description: "Restrictive internet access for backend services"
 spec:
   podSelector: {}
   policyTypes:
   - Egress
   egress:
-  # Only HTTPS
   - to: []
     ports:
     - protocol: TCP
-      port: 443
+      port: 443  # Solo HTTPS
 
 # =============================================================================
-# KUBERNETES API ACCESS
+# ACCESSO API KUBERNETES
 # =============================================================================
 
-# Allow access to Kubernetes API server
+# Frontend: accesso API Kubernetes
 ---
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
@@ -360,11 +297,6 @@ metadata:
   namespace: team-frontend
   labels:
     team: frontend
-    component: network-security
-    policy-type: k8s-api-access
-    setup-step: "step-6"
-  annotations:
-    description: "Allow access to Kubernetes API server"
 spec:
   podSelector: {}
   policyTypes:
@@ -373,10 +305,11 @@ spec:
   - to: []
     ports:
     - protocol: TCP
-      port: 6443
+      port: 6443  # API Kubernetes
     - protocol: TCP
-      port: 443
+      port: 443   # API Kubernetes (alternativa)
 
+# Backend: accesso API Kubernetes
 ---
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
@@ -385,11 +318,6 @@ metadata:
   namespace: team-backend
   labels:
     team: backend
-    component: network-security
-    policy-type: k8s-api-access
-    setup-step: "step-6"
-  annotations:
-    description: "Allow access to Kubernetes API server"
 spec:
   podSelector: {}
   policyTypes:
