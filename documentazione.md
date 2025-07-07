@@ -45,6 +45,7 @@ L'architettura permette a più team di operare sullo stesso cluster mantenendo s
 - **Grafana**: Dashboard dedicati per team e overview platform-wide
 - **Custom Metrics**: Metriche applicative Node.js personalizzate
 - **ServiceMonitors**: Configurazione automatica target Prometheus
+- **Metrics Server**: Raccolta metriche CPU/Memory per HPA auto-scaling
 
 **Architettura High-Level** 
 
@@ -83,16 +84,16 @@ Enterprise: HPA + PDB + Custom Metrics
 bash
 # Docker Desktop (macOS)
 docker --version
-# Docker version 24.0.0+# Kind (Kubernetes in Docker)
+
 brew install kind
 kind --version
-# kind v0.20.0+# kubectl (Kubernetes CLI)
+
 brew install kubectl
 kubectl version --client
-# Client Version: v1.28.0+# Helm (Package Manager)
+
 brew install helm
 helm version
-# version.BuildInfo{Version:"v3.12.0+"}# (JSON parsing)
+
 brew install jq
 
 ```
@@ -358,7 +359,7 @@ L'architettura del sistema è progettata seguendo il **pattern multi-tenant** 
 │  │  CONTROL-PLANE  │ │    WORKER-1     │ │    WORKER-2     │    │
 │  │                 │ │                 │ │                 │    │
 │  │ • API Server    │ │ • Kubelet       │ │ • Kubelet       │    │
-│  │ • Scheduler     │ │ • Container RT  │ │ • Container RT  │    │
+│  │ • Scheduler     │ │                 │ │                 │    │
 │  │ • Controller    │ │ • Calico Node   │ │ • Calico Node   │    │
 │  │ • etcd          │ │                 │ │                 │    │
 │  └─────────────────┘ └─────────────────┘ └─────────────────┘    │
@@ -367,7 +368,7 @@ L'architettura del sistema è progettata seguendo il **pattern multi-tenant** 
 │  │                  NETWORKING LAYER (CALICO)                  ││
 │  │  • Pod-to-Pod Communication                                 ││
 │  │  • Network Policies Enforcement                             ││
-│  │  • Load Balancing (Services)                                ││
+│  │                                                             ││
 │  └─────────────────────────────────────────────────────────────┘│
 └─────────────────────────────────────────────────────────────────┘
 ```
@@ -858,12 +859,9 @@ spec:
 
 Enforcing **security baselines** a livello pod per prevenire privilege escalation.
 
-**Compliant Pod Must Have:**
-
 - **Non-root user**: `runAsNonRoot: true`
 - **No privilege escalation**: `allowPrivilegeEscalation: false`
 - **Drop capabilities**: `capabilities.drop: [ALL]`
-- **Seccomp profile**: `seccompProfile.type: RuntimeDefault`
 - **Read-only filesystem**: `readOnlyRootFilesystem: true`
 
 **Controllo di Sicurezza Implementazione Copertura Stato**
@@ -1036,22 +1034,6 @@ spec:
       app: react-store
 
 ```
-
-**Load Balancing** 
-
-Il **load balancing è automatico** tramite Kubernetes Services - nessuna configurazione aggiuntiva richiesta.
-
-**Funzionamento:**
-
-- **Algoritmo**: Round-robin automatico
-- **Health Checks**: Solo pod Ready ricevono traffico
-- **Distribuzione**: ClusterIP inoltra alle repliche disponibili
-
-**Health Check Types:**
-
-- **Startup Probe**: Readiness iniziale (10s delay)
-- **Readiness Probe**: Decisione routing traffico (5s interval)
-- **Liveness Probe**: Trigger restart (30s delay)
 
 # **MONITORING E OBSERVABILITY**
 
@@ -1429,7 +1411,7 @@ spec:
 
 - **Network isolation** perfetta: team-frontend ❌ → team-backend
 - **Intra-namespace communication** preservata: team-frontend ✅ → team-frontend
-- **DNS service discovery** funzionante per servizi autorizzati
+- **DNS service discovery** funzionante
 
 **Demo 3: Resource Quota Enforcement**
 
@@ -1481,12 +1463,12 @@ spec:
 
 yaml
 spec:
-  replicas: 5# Entro limite 50 pods
+  replicas: 5 # Entro limite 50 pods
   containers:
   - resources:
       requests:
-        cpu: 50m# 5 × 50m = 250m (entro 4 CPU)
-        memory: 64Mi# 5 × 64Mi = 320Mi (entro 8Gi)
+        cpu: 50m # 5 × 50m = 250m (entro 4 CPU)
+        memory: 64M i# 5 × 64Mi = 320Mi (entro 8Gi)
 
 ```
 
@@ -1501,7 +1483,7 @@ spec:
   containers:
   - resources:
       limits:
-        cpu: "5"# VIOLAZIONE: 5 CPU > 2 CPU max LimitRange
+        cpu: "5" # VIOLAZIONE: 5 CPU > 2 CPU max LimitRange
 
 ```
 
@@ -1563,7 +1545,7 @@ spec:
   selector:
     app: users-api
     team: backend
-  sessionAffinity: None# Round-robin load balancing
+  sessionAffinity: None # Round-robin load balancing
 
 ```
 
@@ -1706,8 +1688,6 @@ Il port-forward si collega direttamente al service. Durante un rolling update, p
 
 # CONCLUSIONI
 
-**Il progetto Multi-Tenant Kubernetes Platform ha raggiunto con successo tutti gli obiettivi prefissati**, dimostrando come sia possibile implementare un ambiente enterprise-grade su Kubernetes che garantisca isolamento completo tra team di sviluppo mantenendo al contempo flessibilità operativa e facilità di gestione.
-
 Sviluppi Futuri
 
 **L'architettura è stata progettata per essere estendibile**. Tra le funzionalità che avrei voluto implementare, ma che non sono riuscito a completare per motivi di tempo, c'è l'integrazione di **ArgoCD** per il GitOps deployment:
@@ -1740,8 +1720,6 @@ jobs:
 
 Altri miglioramenti futuri potrebbero includere:
 
-- **Service Mesh (Istio/Linkerd)**: Per observability e security ancora più granulari
-- **External Secrets Operator**: Per gestione sicura dei secret tramite vault esterni
 - **Backup e Disaster Recovery**: Integrazione con Velero per backup automatici
 
-Questo progetto dimostra come Kubernetes, con la giusta architettura e configurazione, possa fornire una piattaforma multi-tenant robusta, sicura e scalabile. **L'approccio modulare adottato permette di aggiungere funzionalità incrementalmente**, partendo da una base solida e sicura.
+Questo progetto dimostra come Kubernetes, con la giusta architettura e configurazione, possa fornire una piattaforma multi-tenant robusta, sicura e scalabile.
