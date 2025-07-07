@@ -10,7 +10,6 @@ metadata:
     tier: backend
   annotations:
     description: "Service for users API backend"
-    business-purpose: "Backend API for load balancing demo"
     prometheus.io/scrape: "true"
     prometheus.io/port: "3000"
     prometheus.io/path: "/metrics"

@@ -10,7 +10,6 @@ metadata:
     tier: backend
   annotations:
     description: "Backend API for multi-tenant platform demo"
-    business-value: "Load balancing and microservices demonstration"
 spec:
   replicas: 2
   selector:

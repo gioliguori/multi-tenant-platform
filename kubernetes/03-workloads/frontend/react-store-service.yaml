@@ -10,7 +10,6 @@ metadata:
     tier: frontend
   annotations:
     description: "Service for React store demo application"
-    business-purpose: "Load balancing demonstration for frontend team"
 spec:
   type: ClusterIP
   ports:

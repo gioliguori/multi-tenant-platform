@@ -9,8 +9,7 @@ metadata:
     component: web-app
     tier: frontend
   annotations:
-    description: "React demo app for multi-tenant platform showcase"
-    business-value: "Visual load balancing demonstration"
+    description: "React demo app"
 spec:
   replicas: 2
   selector:

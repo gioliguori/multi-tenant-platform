@@ -10,5 +10,3 @@ metadata:
     team: platform
     app.kubernetes.io/part-of: multi-tenant-platform
 data:
-  # Questo file serve come template per capire la struttura
-  # Configmap la facciamo con kubectl create configmap ... --from-file=...

@@ -21,10 +21,7 @@ metadata:
     compliance: standard
     
   annotations:
-    description: "Frontend team namespace for React/Angular applications"
-    contact: "frontend-team@company.com"
-    created-by: "multi-tenant-setup"
-    setup-step: "step-2"
+    description: "Frontend team"
 
 ---
 apiVersion: v1
@@ -47,10 +44,7 @@ metadata:
     compliance: standard
     
   annotations:
-    description: "Backend team namespace for APIs and microservices"
-    contact: "backend-team@company.com"
-    created-by: "multi-tenant-setup"
-    setup-step: "step-2"
+    description: "Backend team"
 
 ---
 apiVersion: v1
@@ -73,7 +67,4 @@ metadata:
     compliance: elevated
     
   annotations:
-    description: "Platform team namespace for GitOps, monitoring, and infrastructure"
-    contact: "platform-team@company.com"
-    created-by: "multi-tenant-setup"
-    setup-step: "step-2"
+    description: "Platform team"

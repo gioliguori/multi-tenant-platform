@@ -1,6 +1,4 @@
 # Frontend Auto-scaling and High Availability
-# File: kubernetes/04-scaling/frontend-scaling.yaml
-
 # =============================================================================
 # HORIZONTAL POD AUTOSCALER
 # =============================================================================
@@ -18,7 +16,6 @@ metadata:
     tier: frontend
   annotations:
     description: "Auto-scaling for React store demo"
-    business-value: "Automatic scaling during load tests"
     created-by: "multi-tenant-setup"
 spec:
   scaleTargetRef:
@@ -71,7 +68,6 @@ metadata:
     tier: frontend
   annotations:
     description: "Ensure frontend availability during node maintenance"
-    business-value: "Zero downtime during infrastructure changes"
     created-by: "multi-tenant-setup"
 spec:
   minAvailable: 1

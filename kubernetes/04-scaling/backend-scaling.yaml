@@ -1,6 +1,4 @@
 # Backend Auto-scaling and High Availability
-# File: kubernetes/04-scaling/backend-scaling.yaml
-
 # =============================================================================
 # HORIZONTAL POD AUTOSCALER
 # =============================================================================
@@ -18,7 +16,6 @@ metadata:
     tier: backend
   annotations:
     description: "Auto-scaling for users API"
-    business-value: "Automatic scaling based on API load"
     created-by: "multi-tenant-setup"
 spec:
   scaleTargetRef:
@@ -42,17 +39,17 @@ spec:
         averageUtilization: 70
   behavior:
     scaleUp:
-      stabilizationWindowSeconds: 60
+      stabilizationWindowSeconds: 15 # 60 in realtà ho messo 15 per demo veloce
       policies:
       - type: Pods
         value: 2
-        periodSeconds: 60
+        periodSeconds: 15 # 60
     scaleDown:
-      stabilizationWindowSeconds: 300
+      stabilizationWindowSeconds: 30 # 300
       policies:
       - type: Pods
         value: 1
-        periodSeconds: 60
+        periodSeconds: 15 # 60
 
 # =============================================================================
 # POD DISRUPTION BUDGET
@@ -71,7 +68,6 @@ metadata:
     tier: backend
   annotations:
     description: "Ensure backend API availability during maintenance"
-    business-value: "API always available during cluster operations"
     created-by: "multi-tenant-setup"
 spec:
   minAvailable: 1
