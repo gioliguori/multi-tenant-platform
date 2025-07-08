@@ -162,7 +162,7 @@ spec:
           failureThreshold: 3
       volumes:
       - name: postgres-data
-        emptyDir: {}  # For demo - in production use PVC
+        emptyDir: {}
       - name: postgres-init
         configMap:
           name: postgresql-init

@@ -13,12 +13,10 @@ metadata:
   labels:
     team: frontend
     component: governance
-    setup-step: "step-5"
   annotations:
     description: "Resource limits and cost control for frontend team"
     monthly-budget: "$500"
     contact: "frontend-team@company.com"
-    created-by: "multi-tenant-setup"
 spec:
   hard:
     # Compute Resources
@@ -51,10 +49,8 @@ metadata:
   labels:
     team: frontend
     component: governance
-    setup-step: "step-5"
   annotations:
     description: "Default resource limits for frontend team pods"
-    created-by: "multi-tenant-setup"
 spec:
   limits:
   
@@ -82,12 +78,10 @@ metadata:
   labels:
     team: backend
     component: governance
-    setup-step: "step-5"
   annotations:
     description: "Resource limits and cost control for backend team"
     monthly-budget: "$800"
     contact: "backend-team@company.com"
-    created-by: "multi-tenant-setup"
 spec:
   hard:
     # Compute Resources
@@ -119,10 +113,8 @@ metadata:
   labels:
     team: backend
     component: governance
-    setup-step: "step-5"
   annotations:
     description: "Default resource limits for backend team pods"
-    created-by: "multi-tenant-setup"
 spec:
   limits:
   
@@ -150,12 +142,10 @@ metadata:
   labels:
     team: platform
     component: governance
-    setup-step: "step-5"
   annotations:
     description: "Resource limits for platform team infrastructure"
     monthly-budget: "$1200"
     contact: "platform-team@company.com"
-    created-by: "multi-tenant-setup"
 spec:
   hard:
     # Compute Resources
@@ -188,10 +178,8 @@ metadata:
   labels:
     team: platform
     component: governance
-    setup-step: "step-5"
   annotations:
     description: "Default resource limits for platform team infrastructure"
-    created-by: "multi-tenant-setup"
 spec:
   limits:
   - default:

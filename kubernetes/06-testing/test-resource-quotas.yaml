@@ -81,7 +81,7 @@ spec:
     image: nginx:alpine
     resources:
       requests:
-        cpu: "5"        # VIOLAZIONE: Eccede quota team (4 CPU totali)
+        cpu: "5"        # Eccede quota team (4 CPU totali)
         memory: 1Gi
       limits:
         cpu: "5"
@@ -120,8 +120,8 @@ spec:
     image: nginx:alpine
     resources:
       requests:
-        cpu: "3"        # VIOLAZIONE: Eccede max 2 CPU per container (LimitRange)
-        memory: 6Gi     # VIOLAZIONE: Eccede max 4Gi per container (LimitRange)
+        cpu: "3"        # Eccede max 2 CPU per container (LimitRange)
+        memory: 6Gi     # Eccede max 4Gi per container (LimitRange)
       limits:
         cpu: "3"
         memory: 6Gi

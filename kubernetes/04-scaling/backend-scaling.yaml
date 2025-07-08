@@ -16,7 +16,6 @@ metadata:
     tier: backend
   annotations:
     description: "Auto-scaling for users API"
-    created-by: "multi-tenant-setup"
 spec:
   scaleTargetRef:
     apiVersion: apps/v1
@@ -68,7 +67,6 @@ metadata:
     tier: backend
   annotations:
     description: "Ensure backend API availability during maintenance"
-    created-by: "multi-tenant-setup"
 spec:
   minAvailable: 1
   selector:

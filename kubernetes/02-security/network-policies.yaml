@@ -355,8 +355,8 @@ spec:
 #     ports:
 #     - protocol: TCP
 #       port: 3000            # Porta React server
-
-
+  
+  
 # Browser -> nginx-ingress -> users-api pod
 # Con questa possiamo fare fetch('/api/products') da react
 # ---

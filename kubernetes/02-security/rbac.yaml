@@ -12,10 +12,8 @@ metadata:
   labels:
     team: frontend
     component: rbac
-    setup-step: "step-4"
   annotations:
     description: "Full permissions for frontend team within their namespace"
-    created-by: "multi-tenant-setup"
 rules:
 # Kubernetes resources
 - apiGroups: [""]
@@ -60,10 +58,8 @@ metadata:
   labels:
     team: frontend
     component: rbac
-    setup-step: "step-4"
   annotations:
     description: "Binds frontend ServiceAccount to frontend Role"
-    created-by: "multi-tenant-setup"
 subjects:
 - kind: ServiceAccount
   name: team-frontend-sa
@@ -86,10 +82,8 @@ metadata:
   labels:
     team: backend
     component: rbac
-    setup-step: "step-4"
   annotations:
     description: "Full permissions for backend team within their namespace"
-    created-by: "multi-tenant-setup"
 rules:
 # Kubernetes resources
 - apiGroups: [""]
@@ -139,10 +133,8 @@ metadata:
   labels:
     team: backend
     component: rbac
-    setup-step: "step-4"
   annotations:
     description: "Binds backend ServiceAccount to backend Role"
-    created-by: "multi-tenant-setup"
 subjects:
 - kind: ServiceAccount
   name: team-backend-sa
@@ -164,10 +156,8 @@ metadata:
   labels:
     team: platform
     component: rbac
-    setup-step: "step-4"
   annotations:
     description: "Cluster-wide admin permissions for platform team"
-    created-by: "multi-tenant-setup"
     privilege-level: "cluster-admin"
 rules:
 - apiGroups: ["*"]
@@ -185,10 +175,8 @@ metadata:
   labels:
     team: platform
     component: rbac
-    setup-step: "step-4"
   annotations:
     description: "Binds platform ServiceAccount to cluster admin role"
-    created-by: "multi-tenant-setup"
 subjects:
 - kind: ServiceAccount
   name: team-platform-sa
@@ -212,7 +200,6 @@ metadata:
   labels:
     team: platform
     component: monitoring-rbac
-    setup-step: "step-4"
 rules:
 - apiGroups: [""]
   resources: ["pods", "services", "endpoints"]
@@ -230,7 +217,6 @@ metadata:
   labels:
     team: platform
     component: monitoring-rbac
-    setup-step: "step-4"
 subjects:
 - kind: ServiceAccount
   name: team-platform-sa
@@ -249,7 +235,6 @@ metadata:
   labels:
     team: platform
     component: monitoring-rbac
-    setup-step: "step-4"
 rules:
 - apiGroups: [""]
   resources: ["pods", "services", "endpoints"]
@@ -267,7 +252,6 @@ metadata:
   labels:
     team: platform
     component: monitoring-rbac
-    setup-step: "step-4"
 subjects:
 - kind: ServiceAccount
   name: team-platform-sa

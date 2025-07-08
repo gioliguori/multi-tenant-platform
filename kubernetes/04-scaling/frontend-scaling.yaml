@@ -16,7 +16,6 @@ metadata:
     tier: frontend
   annotations:
     description: "Auto-scaling for React store demo"
-    created-by: "multi-tenant-setup"
 spec:
   scaleTargetRef:
     apiVersion: apps/v1
@@ -68,7 +67,6 @@ metadata:
     tier: frontend
   annotations:
     description: "Ensure frontend availability during node maintenance"
-    created-by: "multi-tenant-setup"
 spec:
   minAvailable: 1
   selector:

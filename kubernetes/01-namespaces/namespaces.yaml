@@ -8,7 +8,6 @@ metadata:
   labels:
     # Team
     team: frontend
-    purpose: application
     environment: development
     
     # Pod Security Standards
@@ -31,7 +30,6 @@ metadata:
   labels:
     # Team
     team: backend
-    purpose: application
     environment: development
     
     # Pod Security Standards
@@ -54,7 +52,6 @@ metadata:
   labels:
     # Team
     team: platform
-    purpose: infrastructure
     environment: shared
     
     # Pod Security Standards
