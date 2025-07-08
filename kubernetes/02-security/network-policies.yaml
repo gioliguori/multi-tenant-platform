@@ -160,7 +160,7 @@ spec:
 # ACCESSO DATABASE
 # =============================================================================
 
-# Backend: accesso PostgreSQL
+# Backend: accesso PostgreSQL (ora ridondante)
 ---
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
@@ -208,7 +208,7 @@ spec:
     - protocol: TCP # Grafana port
       port: 3000    
     - protocol: TCP
-      port: 8080    # Common metrics port
+      port: 8080    # metrics port
     - protocol: TCP
       port: 9090    # Prometheus metrics
 
@@ -289,6 +289,8 @@ spec:
 # =============================================================================
 
 # Frontend: accesso API Kubernetes
+# non ho fatto demo ma tipo : 
+# kubectl exec -n team-frontend pod -- kubectl get pods
 ---
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
@@ -329,3 +331,51 @@ spec:
       port: 6443
     - protocol: TCP
       port: 443
+
+
+# Policy ingress (non funziona)
+# Browser -> nginx-ingress -> react-store pod
+# ---
+# apiVersion: networking.k8s.io/v1
+# kind: NetworkPolicy
+# metadata:
+#   name: allow-ingress-to-frontend
+#   namespace: team-frontend
+# spec:
+#   podSelector:
+#     matchLabels:
+#       app: react-store
+#   policyTypes:
+#   - Ingress                
+#   ingress:
+#   - from:
+#     - namespaceSelector:
+#         matchLabels:
+#           name: ingress-nginx
+#     ports:
+#     - protocol: TCP
+#       port: 3000            # Porta React server
+
+
+# Browser -> nginx-ingress -> users-api pod
+# Con questa possiamo fare fetch('/api/products') da react
+# ---
+# apiVersion: networking.k8s.io/v1
+# kind: NetworkPolicy
+# metadata:
+#   name: allow-ingress-to-backend
+#   namespace: team-backend
+# spec:
+#   podSelector:
+#     matchLabels:
+#       app: users-api
+#   policyTypes:
+#   - Ingress
+#   ingress:
+#   - from:
+#     - namespaceSelector:
+#         matchLabels:
+#           name: ingress-nginx
+#     ports:
+#     - protocol: TCP
+#    port: 3000            # Porta API Node.js
