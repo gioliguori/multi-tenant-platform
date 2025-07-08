@@ -1352,17 +1352,75 @@ Conclusioni
 
 **Obiettivo:** Dimostrare isolamento di rete tra namespace
 
-*Network Policy blocca accesso cross-namespace*
+```bash
+kubectl apply -f test-network-isolation.yaml
+kubectl wait --for=condition=ready pod network-test-frontend -n team-frontend --timeout=60s
+```
+
+***Network Policy blocca accesso cross-namespace***
+
+```bash
+kubectl exec -n team-frontend network-test-frontend -- \
+  curl --connect-timeout 5 --max-time 5 \
+  http://users-api.team-backend.svc.cluster.local:3000/api/health
+```
 
 ![demo2-1.png](Multi-Tenant%20Kubernetes%20Platform%2021e38bfc2d1080e4a41af7d7e8d28147/demo2-1.png)
 
-Comunicazione intra-namespace permessa (HTML response ricevuto)
+**Comunicazione intra-namespace permessa (HTML response ricevuto)**
+
+```bash
+kubectl exec -n team-frontend network-test-frontend -- \
+  curl -s http://react-store.team-frontend.svc.cluster.local:3000
+```
 
 ![demo2-2.png](Multi-Tenant%20Kubernetes%20Platform%2021e38bfc2d1080e4a41af7d7e8d28147/demo2-2.png)
 
-DNS resolution funziona correttamente per servizi autorizzati
+**DNS resolution funziona correttamente per servizi autorizzati**
+
+```bash
+  kubectl exec -n team-frontend network-test-frontend -- \
+  nslookup react-store.team-frontend.svc.cluster.local
+  
+  kubectl exec -n team-frontend network-test-frontend -- \
+  nslookup users-api.team-backend.svc.cluster.local
+  
+```
 
 ![demo2-3.png](Multi-Tenant%20Kubernetes%20Platform%2021e38bfc2d1080e4a41af7d7e8d28147/demo2-3.png)
+
+![Screenshot 2025-07-07 alle 16.51.52.png](Multi-Tenant%20Kubernetes%20Platform%2021e38bfc2d1080e4a41af7d7e8d28147/Screenshot_2025-07-07_alle_16.51.52.png)
+
+**Test Accesso Internet**
+
+```bash
+kubectl exec -n team-frontend network-test-frontend -- timeout 10 curl -I https://google.com
+kubectl exec -n team-backend network-test-backend -- timeout 10 curl -I https://google.com
+
+kubectl exec -n team-frontend network-test-frontend -- timeout 10 curl -I http://httpbin.org/get || echo "Bloccato"
+kubectl exec -n team-backend network-test-backend -- timeout 10 curl -I http://httpbin.org/get || echo "Bloccato"
+
+```
+
+![Screenshot 2025-07-07 alle 16.55.35.png](Multi-Tenant%20Kubernetes%20Platform%2021e38bfc2d1080e4a41af7d7e8d28147/Screenshot_2025-07-07_alle_16.55.35.png)
+
+![Screenshot 2025-07-07 alle 16.55.48.png](Multi-Tenant%20Kubernetes%20Platform%2021e38bfc2d1080e4a41af7d7e8d28147/Screenshot_2025-07-07_alle_16.55.48.png)
+
+![Screenshot 2025-07-07 alle 16.56.07.png](Multi-Tenant%20Kubernetes%20Platform%2021e38bfc2d1080e4a41af7d7e8d28147/Screenshot_2025-07-07_alle_16.56.07.png)
+
+![Screenshot 2025-07-07 alle 16.56.26.png](Multi-Tenant%20Kubernetes%20Platform%2021e38bfc2d1080e4a41af7d7e8d28147/Screenshot_2025-07-07_alle_16.56.26.png)
+
+ **Database Connectivity** 
+
+```bash
+PG_SERVICE_IP=$(kubectl get svc postgresql -n team-backend -o jsonpath='{.spec.clusterIP}')
+echo "PostgreSQL Service IP: $PG_SERVICE_IP"
+kubectl exec -n team-backend network-test-backend -- timeout 5 nc -zv $PG_SERVICE_IP 5432 && echo "Backend può accedere"
+kubectl exec -n team-frontend network-test-frontend -- timeout 5 nc -zv $PG_SERVICE_IP 5432 || echo "Frontend non può accedere"
+
+```
+
+![Screenshot 2025-07-07 alle 17.01.05.png](Multi-Tenant%20Kubernetes%20Platform%2021e38bfc2d1080e4a41af7d7e8d28147/Screenshot_2025-07-07_alle_17.01.05.png)
 
 **Codice di Riferimento** **File:** `kubernetes/02-security/network-policies.yaml`
 
